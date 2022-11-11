@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-podman build -t "bd-compare" .
 podman image prune -a -f
+podman build -t "bd-compare" .
 
 ENCODERS=("x265" "aomenc")
 VIDEOS=("bbb_short.mkv")

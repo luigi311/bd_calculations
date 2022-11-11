@@ -266,12 +266,12 @@ fi
 
 # Set job amounts for encoding
 if [ "$ENC_WORKERS" -eq -1 ]; then
-    ENC_WORKERS=$(( (100 / "$THREADS") ))
+    ENC_WORKERS=$(( (100 / "$THREADS") + 20 ))
     ENC_WORKERS="${ENC_WORKERS}%"
 fi
 
 if [ "$METRIC_WORKERS" -eq -1 ]; then
-    METRIC_WORKERS=$(( (100 / "$N_THREADS") ))
+    METRIC_WORKERS=$(( (100 / "$N_THREADS") + 20 ))
     METRIC_WORKERS="${METRIC_WORKERS}%"
 fi
 
