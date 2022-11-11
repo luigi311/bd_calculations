@@ -58,7 +58,8 @@ if [ "$N_THREADS" -eq -1 ]; then
     N_THREADS=$(( 8 < $(nproc) ? 8 : $(nproc) ))
 fi
 
-FILE=${DISTORTED%.mkv} &&
+FILE=${DISTORTED%.mkv}
+
 LOG=$(ffmpeg -hide_banner -loglevel error -r 60 -i "$DISTORTED" -r 60 -i "$REFERENCE" -filter_complex "libvmaf=log_path=${FILE}.json:log_fmt=json:n_threads=${N_THREADS}" -f null - 2>&1)
 
 if [ -n "$LOG" ]; then
@@ -72,18 +73,22 @@ if [ "$VMAF" == "null" ]; then
     VMAF=$(jq '.["VMAF score"]' "${FILE}.json")
 fi
 
-echo -n "$VMAF" >> "$FILE.stats"
-rm "${FILE}.json"
-
-
-# SSIMULACRA2
-OUTPUT=$(ssimulacra2_rs video -t "${N_THREADS}" "$REFERENCE" "$DISTORTED")
-
-SSIM2=$(echo $OUTPUT | awk ' { print $7 } ')
-
-if [ ! -z "$SSIM2" ]; then
-    echo -n ",$SSIM2" >> "${FILE}.stats"
-    rm -f "$DISTORTED"
+if [ -n "$VMAF" ]; then
+    printf "%s" "$VMAF" >> "$FILE.stats"
+    rm "${FILE}.json"
 else
-    die "Failed to generate SSIM2 info $OUTPUT"
+    printf "%s" "$VMAF"
+    die "Failed to generate VMAF info ${OUTPUT}"
 fi
+
+
+## SSIMULACRA2
+#OUTPUT=$(ssimulacra2_rs video "$REFERENCE" "$DISTORTED")
+#
+#SSIM2=$(echo "$OUTPUT" | awk ' { print $7 } ')
+#
+#if [ -n "$SSIM2" ]; then
+#    echo -n ",$SSIM2" >> "${FILE}.stats"
+#else
+#    die "Failed to generate SSIM2 info ${OUTPUT}"
+#fi

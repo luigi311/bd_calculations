@@ -137,6 +137,7 @@ parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--input', '-i', type=Path, help='Input File')
 parser.add_argument('--output', '-o', type=Path, default=Path('bd_rates.csv'), help='Output File')
 parser.add_argument('--baseline', '-b', type=str, help='Previous Hash', required=True)
+parser.add_argument('--metric', '-m', type=int, help='Metric column', required=True)
 args = parser.parse_args()
 
 with open(args.input) as csvfile:
@@ -159,8 +160,8 @@ for flag in flags:
 
     flag_list = [x for x in data if x[0] == flag]
 
-    baseline_metric = [(float(x[4]), float(x[8])) for x in baseline_list]
-    flag_metric = [(float(x[4]), float(x[8])) for x in flag_list]
+    baseline_metric = [(float(x[4]), float(x[args.metric])) for x in baseline_list]
+    flag_metric = [(float(x[4]), float(x[args.metric])) for x in flag_list]
     bdrate_stats = round(bdrate(baseline_metric,flag_metric), 3)
     stats = bdrate_stats
 

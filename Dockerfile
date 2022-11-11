@@ -30,7 +30,8 @@ RUN apt-get update && \
         libavformat-dev \
         libavfilter-dev \
         libavdevice-dev \
-        clang && \
+        clang \
+        libfontconfig-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -94,12 +95,10 @@ RUN curl -LO https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-stat
     tar xf ffmpeg-* && \
     mv ffmpeg-*/* /usr/local/bin/
 
-
 # Install ssimulacra2
 RUN git clone https://github.com/FreezyLemon/ssimulacra2_bin.git /ssimulacra2_bin
 WORKDIR /ssimulacra2_bin
-RUN git checkout add-multithreading && \
-    cargo build --release && \
+RUN git checkout mt-test && cargo build --release && \
     cp target/release/ssimulacra2_rs /usr/local/bin
 
 

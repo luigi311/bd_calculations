@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+calculate_bd() {
+    echo "Creating CSV"
+    TEMP_CSV="${OUTPUTFINAL}/${1}/${CSV}"
+    echo "Commit, Size, Quality, Preset, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF" > "${TEMP_CSV}"
+
+    if [ -n "$LASTHASH" ]; then
+        echo "Last commit: ${LASTHASH}"
+        find "${OUTPUT}/${ENCODER}/${LASTHASH}/${VIDEO}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}"
+    fi
+
+    find "${OUTPUTFINAL}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}"
+
+    if [ -n "$LASTHASH" ]; then
+        echo "Calculating bd_rates"
+        scripts/bd_features.py --input "${TEMP_CSV}" --output "${TEMP_CSV%.csv}_bd_rates.csv" --baseline "${LASTHASH}" --metric "${2}"
+    fi
+
+}
+
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 die() {
     printf '%s\n' "$1" >&2
@@ -41,7 +60,8 @@ EOF
 OUTPUT="output"
 INPUT="video.mkv"
 CSV="stats.csv"
-METRIC_WORKERS=1
+ENC_WORKERS=-1
+METRIC_WORKERS=-1
 THREADS=-1
 N_THREADS=-1
 Q=-1
@@ -49,8 +69,6 @@ CQ=-1
 VBR=-1
 CRF=-1
 CBR=-1
-MANUAL=0
-BD=-1
 SAMPLES=-1
 SAMPLETIME=60
 ENCODER="aomenc"
@@ -102,7 +120,6 @@ while :; do
         -e | --encworkers)
             if [ "$2" ]; then
                 ENC_WORKERS="$2"
-                MANUAL=1
                 shift
             else
                 die "ERROR: $1 requires a non-empty option argument."
@@ -116,16 +133,16 @@ while :; do
                 die "ERROR: $1 requires a non-empty option argument."
             fi
             ;;
-        --resume)
-            RESUME="--resume"
-            ;;
-        -f | --flags)
+        -n | --nthreads)
             if [ "$2" ]; then
-                FLAGS="$2"
+                N_THREADS="$2"
                 shift
             else
                 die "ERROR: $1 requires a non-empty option argument."
             fi
+            ;;
+        --resume)
+            RESUME="--resume"
             ;;
         -t | --threads)
             if [ "$2" ]; then
@@ -167,7 +184,6 @@ while :; do
             ;;
         --bd)
             if [ "$2" ]; then
-                BD=1
                 BD_FILE="$2"
                 if [ ! -f "$BD_FILE" ]; then
                     die "$BD_FILE file does not exist"
@@ -179,7 +195,10 @@ while :; do
             ;;
         --preset)
             if [ "$2" ]; then
-                PRESET="--preset $2"
+                PRESET_FILE="$2"
+                if [ ! -f "$PRESET_FILE" ]; then
+                    die "$PRESET_FILE file does not exist"
+                fi
                 shift
             else
                 die "ERROR: $1 requires a non-empty argument."
@@ -247,10 +266,13 @@ if [ "$N_THREADS" -eq -1 ]; then
 fi
 
 # Set job amounts for encoding
-if [ "$MANUAL" -ne 1 ]; then
+if [ "$ENC_WORKERS" -eq -1 ]; then
     ENC_WORKERS=$(( (100 / "$THREADS") ))
-    METRIC_WORKERS=$(( (100 / "$N_THREADS") ))
     ENC_WORKERS="${ENC_WORKERS}%"
+fi
+
+if [ "$METRIC_WORKERS" -eq -1 ]; then
+    METRIC_WORKERS=$(( (100 / "$N_THREADS") ))
     METRIC_WORKERS="${METRIC_WORKERS}%"
 fi
 
@@ -301,10 +323,18 @@ if [ ! -f "$INPUT" ]; then
     die "$INPUT file does not exist"
 fi
 
+if [ ! -f "$PRESET_FILE" ]; then
+    die "$PRESET_FILE file does not exist"
+fi
+
+if [ ! -f "$BD_FILE" ]; then
+    die "$BD_FILE file does not exist"
+fi
+
 if [ "$SAMPLES" -ne -1 ]; then
     echo "Creating Sample"
     mkdir -p split
-    ffmpeg -y -hide_banner -loglevel error -i "$INPUT" -c copy -map 0:v -segment_time $SAMPLETIME -f segment split/%05d.mkv
+    ffmpeg -y -hide_banner -loglevel error -i "$INPUT" -c copy -map 0:v -segment_time "$SAMPLETIME" -f segment split/%05d.mkv
     COUNT=$(( $(find split | wc -l ) - 2 ))
     if [ $COUNT -eq 0 ]; then COUNT=1; fi
     INCR=$((COUNT / SAMPLES))
@@ -319,7 +349,7 @@ if [ "$SAMPLES" -ne -1 ]; then
     done
     (
       cd split || exit
-      rm *
+      rm ./*
       find ./*.mkv | sed 's:\ :\\\ :g' | sed 's/.\///' |sed 's/^/file /' | sed 's/mkv/mkv\nduration '$SAMPLETIME'/' > concat.txt; ffmpeg -y -hide_banner -loglevel error -f concat -i concat.txt -c copy output.mkv; rm concat.txt
       mv output.mkv ../
     )
@@ -332,31 +362,28 @@ mkdir -p "${OUTPUT}"
 
 # Get hash
 HASH=$(cd "/${ENCODER}" && git rev-parse HEAD)
-LASTHASH=$(ls -lt ${OUTPUT} | awk 'NR==2{ print $9 }')
+LASTHASH=$(ls -lt "${OUTPUT}/${ENCODER}" | awk 'NR==2{ print $9 }')
+echo "Last hash: $LASTHASH"
+echo "Current hash: $HASH"
+
+if [ "$LASTHASH" == "$HASH" ]; then
+    echo "Hashes match, going back further"
+    LASTHASH=$(ls -lt "${OUTPUT}/${ENCODER}" | awk 'NR==3{ print $9 }')
+fi
+
 VIDEO=$(basename "$INPUT" | sed 's/\(.*\)\..*/\1/')
 
-OUTPUTFINAL="${OUTPUT}/${ENCODER}/${HASH}/${VIDEO}/${PRESET}"
+OUTPUTFINAL="${OUTPUT}/${ENCODER}/${HASH}/${VIDEO}"
 mkdir -p "${OUTPUTFINAL}"
-CSV="${OUTPUTFINAL}/${CSV}"
 
-
+# shellcheck disable=SC2086
 echo "Encoding"
-parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "$BD_FILE" "scripts/${ENCODER}.sh" --input "$INPUT" --output "${OUTPUTFINAL}" --threads "$THREADS" "$ENCODING" --quality "{1}" --flag "baseline" $PRESET $PASS $DECODE
+parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "$PRESET_FILE" -a "$BD_FILE" "scripts/${ENCODER}.sh" --input "$INPUT" --output "${OUTPUTFINAL}/{1}" --threads "$THREADS" "$ENCODING" --quality "{2}" --preset "{1}" --flag "baseline" $PASS $DECODE
 
 
 echo "Calculating Metrics"
 find "$OUTPUTFINAL" -name "*.mkv" | parallel -j "$METRIC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference "$INPUT" --nthreads "$N_THREADS"
 
-echo "Creating CSV"
-echo "Commit, Size, Quality, Preset, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF" > "$CSV"
-
-if [ ! -z "$LASTHASH" ]; then
-    find "${OUTPUT}/${ENCODER}/${LASTHASH}/${VIDEO}/${PRESET}" -name '*.stats' -exec awk '{print $0}' {} + >> "$CSV"
-fi
-
-find "${OUTPUTFINAL}" -name '*.stats' -exec awk '{print $0}' {} + >> "$CSV"
-
-if [ ! -z "$LASTHASH" ]; then
-    echo "Calculating bd_rates"
-    scripts/bd_features.py --input "$CSV" --output "${CSV%.csv}_bd_rates.csv" --baseline "${LASTHASH}"
-fi
+echo "Calculate BD_Rates"
+#parallel -j 1 $DISTRIBUTE --joblog "${OUTPUTFINAL}/bd.log" $RESUME --bar -a "$PRESET_FILE" calculate_bd "{1}" 8
+calculate_bd 0 8

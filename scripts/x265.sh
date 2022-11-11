@@ -154,13 +154,13 @@ fi
 
 # Set the encoding mode of vbr/crf along with a default
 if [ "$VBR" -ne -1 ]; then
-    TYPE="vbr${QUALITY}p${PRESET}"
+    TYPE="vbr${QUALITY}"
     QUALITY_SETTINGS="-b:v ${QUALITY}"
 elif [ "$CRF" -ne -1 ]; then
-    TYPE="crf${QUALITY}p${PRESET}"
+    TYPE="crf${QUALITY}"
     QUALITY_SETTINGS="-crf ${QUALITY}"
 else
-    TYPE="crf${QUALITY}p${PRESET}"
+    TYPE="crf${QUALITY}"
     QUALITY_SETTINGS="-crf ${QUALITY}"
 fi
 
