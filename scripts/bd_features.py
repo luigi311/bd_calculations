@@ -183,6 +183,6 @@ for flag in flags:
 ls.sort(key=lambda x: x[1])
 with open (args.output, 'w') as csvfile:
     csvwriter = csv.writer(csvfile, delimiter=',')
-    csvwriter.writerow(['Flag', 'VMAF', 'Encode Time Diff Pct', 'Decode Time Diff Pct'])
+    csvwriter.writerow(['Commit', 'VMAF', 'Encode Time Diff Pct', 'Decode Time Diff Pct'])
     for x in ls:
         csvwriter.writerow(x)

@@ -40,6 +40,7 @@ VBR=-1
 QUALITY=50
 PASS=2
 DECODE=-1
+COMMIT="-1"
 
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 while :; do
@@ -123,6 +124,14 @@ while :; do
                 die "ERROR: $1 requires a non-empty argument."
             fi
             ;;
+        --commit)
+            if [ "$2" ]; then
+                COMMIT="$2"
+                shift
+            else
+                die "ERROR: $1 requires a non-empty argument."
+            fi
+            ;;
         --decode)
             DECODE=1
             ;;
@@ -139,12 +148,14 @@ while :; do
     shift
 done
 
+if [ "$COMMIT" = "-1" ]; then
+    die "Please set commit hash"
+fi
+
 if [ "$THREADS" -eq -1 ]; then
     THREADS=$(( 4 < $(nproc) ? 4 : $(nproc) ))
 fi
 
-# Original Flags used for CSV
-FLAGSSTAT="$FLAG"
 # Remove any potential characters that might cause issues in folder names
 FOLDER1=$(echo "$FLAG" | sed ' s/--//g; s/=//g; s/ //g; s/:/_/g')
 # Get last 120 characters of flags for folder name to prevent length issues
@@ -198,7 +209,8 @@ else
 fi
 
 rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" 
+rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" &&
+rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.json" 
 SIZE=$(du "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" | awk '{print $1}') &&
 BITRATE=$(ffprobe -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
-echo -n "$FLAGSSTAT,$SIZE,$TYPE,$PRESET,$BITRATE,$FIRST_TIME,$SECOND_TIME,$DECODE_TIME," > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"
+echo -n "$COMMIT,$SIZE,$TYPE,$PRESET,$BITRATE,$FIRST_TIME,$SECOND_TIME,$DECODE_TIME," > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"

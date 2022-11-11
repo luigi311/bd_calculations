@@ -60,7 +60,7 @@ fi
 
 FILE=${DISTORTED%.mkv}
 
-LOG=$(ffmpeg -hide_banner -loglevel error -r 60 -i "$DISTORTED" -r 60 -i "$REFERENCE" -filter_complex "libvmaf=log_path=${FILE}.json:log_fmt=json:n_threads=${N_THREADS}" -f null - 2>&1)
+LOG=$(ffmpeg -hide_banner -loglevel error -i "$DISTORTED" -i "$REFERENCE" -filter_complex "libvmaf=log_path=${FILE}.json:log_fmt=json:n_threads=${N_THREADS}" -f null - 2>&1)
 
 if [ -n "$LOG" ]; then
     die "$LOG"
@@ -75,7 +75,7 @@ fi
 
 if [ -n "$VMAF" ]; then
     printf "%s" "$VMAF" >> "$FILE.stats"
-    rm "${FILE}.json"
+    #rm "${FILE}.json"
 else
     printf "%s" "$VMAF"
     die "Failed to generate VMAF info ${OUTPUT}"

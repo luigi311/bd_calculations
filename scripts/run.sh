@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 
 calculate_bd() {
-    echo "Creating CSV"
+    FOUND=0
+
     TEMP_CSV="${OUTPUTFINAL}/${1}/${CSV}"
     echo "Commit, Size, Quality, Preset, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF" > "${TEMP_CSV}"
 
     if [ -n "$LASTHASH" ]; then
-        echo "Last commit: ${LASTHASH}"
-        find "${OUTPUT}/${ENCODER}/${LASTHASH}/${VIDEO}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}"
+        find "${OUTPUT}/${ENCODER}/${LASTHASH}/${VIDEO}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}" && FOUND=1
     fi
 
     find "${OUTPUTFINAL}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}"
 
-    if [ -n "$LASTHASH" ]; then
-        echo "Calculating bd_rates"
+    if [ -n "$LASTHASH" ] && [ "$FOUND" -eq 1 ]; then
         scripts/bd_features.py --input "${TEMP_CSV}" --output "${TEMP_CSV%.csv}_bd_rates.csv" --baseline "${LASTHASH}" --metric "${2}"
     fi
 
@@ -363,13 +362,14 @@ mkdir -p "${OUTPUT}"
 # Get hash
 HASH=$(cd "/${ENCODER}" && git rev-parse HEAD)
 LASTHASH=$(ls -lt "${OUTPUT}/${ENCODER}" | awk 'NR==2{ print $9 }')
-echo "Last hash: $LASTHASH"
-echo "Current hash: $HASH"
 
 if [ "$LASTHASH" == "$HASH" ]; then
     echo "Hashes match, going back further"
     LASTHASH=$(ls -lt "${OUTPUT}/${ENCODER}" | awk 'NR==3{ print $9 }')
 fi
+
+echo "Last hash: $LASTHASH"
+echo "Current hash: $HASH"
 
 VIDEO=$(basename "$INPUT" | sed 's/\(.*\)\..*/\1/')
 
@@ -378,12 +378,16 @@ mkdir -p "${OUTPUTFINAL}"
 
 # shellcheck disable=SC2086
 echo "Encoding"
-parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "$PRESET_FILE" -a "$BD_FILE" "scripts/${ENCODER}.sh" --input "$INPUT" --output "${OUTPUTFINAL}/{1}" --threads "$THREADS" "$ENCODING" --quality "{2}" --preset "{1}" --flag "baseline" $PASS $DECODE
+parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "$PRESET_FILE" -a "$BD_FILE" "scripts/${ENCODER}.sh" --input "$INPUT" --output "${OUTPUTFINAL}/{1}" --threads "$THREADS" "$ENCODING" --quality "{2}" --preset "{1}" --flag "baseline" --commit "$HASH" $PASS $DECODE
 
 
 echo "Calculating Metrics"
 find "$OUTPUTFINAL" -name "*.mkv" | parallel -j "$METRIC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference "$INPUT" --nthreads "$N_THREADS"
 
-echo "Calculate BD_Rates"
-#parallel -j 1 $DISTRIBUTE --joblog "${OUTPUTFINAL}/bd.log" $RESUME --bar -a "$PRESET_FILE" calculate_bd "{1}" 8
-calculate_bd 0 8
+echo "Creating CSV"
+find "$OUTPUTFINAL" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' FOLDER
+do
+    PRESET=$(basename "${FOLDER}")
+    calculate_bd "$PRESET" 7
+done
+
