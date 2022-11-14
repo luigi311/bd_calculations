@@ -182,7 +182,7 @@ mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
 BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | x265 --log-level 0 --no-progress --input - --y4m --pools ${THREADS} --preset ${PRESET} ${QUALITY_SETTINGS}"
 
 if [ "$VBR" -ne -1 ] || [ "$PASS" -eq 1 ]; then
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 1 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\"" 2>&1 | awk ' /Sec/ { print $2 }')
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 1 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
     SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 2 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h265\"" 2>&1 | awk ' /Sec/ { print $2 }')
 else
     FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h265\" " 2>&1 | awk ' /Sec/ { print $2 }')
