@@ -4,7 +4,7 @@ calculate_bd() {
     FOUND=0
 
     TEMP_CSV="${OUTPUTFINAL}/${1}/${CSV}"
-    echo "Commit, Size, Quality, Preset, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF" > "${TEMP_CSV}"
+    echo "Encoder, Commit, Preset, Video, Size, Quality, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF" > "${TEMP_CSV}"
 
     if [ -n "$LASTHASH" ]; then
         find "${OUTPUT}/${ENCODER}/${LASTHASH}/${VIDEO}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}" && FOUND=1
@@ -13,7 +13,10 @@ calculate_bd() {
     find "${OUTPUTFINAL}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}"
 
     if [ -n "$LASTHASH" ] && [ "$FOUND" -eq 1 ]; then
-        scripts/bd_features.py --input "${TEMP_CSV}" --output "${TEMP_CSV%.csv}_bd_rates.csv" --baseline "${LASTHASH}" --vmaf "${2}"
+        echo "BD Features"
+        scripts/bd_features.py --input "${TEMP_CSV}" --output "${TEMP_CSV%.csv}_bd_rates.csv" --encoder "${ENCODER}" --commit "${LASTHASH}" --preset "${1}"
+        echo "Upload"
+        scripts/upload_metrics.py --input "${TEMP_CSV%.csv}_bd_rates.csv"
     fi
 
 }
@@ -388,6 +391,6 @@ echo "Creating CSV"
 find "$OUTPUTFINAL" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' FOLDER
 do
     PRESET=$(basename "${FOLDER}")
-    calculate_bd "$PRESET" 8
+    calculate_bd "$PRESET"
 done
 

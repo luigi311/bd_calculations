@@ -105,4 +105,5 @@ RUN git checkout mt-test && cargo build --release && \
 WORKDIR /app
 COPY . /app
 
-RUN chmod +x scripts/*
+RUN chmod +x scripts/* && \
+    pip3 install -r requirements.txt

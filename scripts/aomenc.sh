@@ -156,6 +156,9 @@ if [ "$THREADS" -eq -1 ]; then
     THREADS=$(( 4 < $(nproc) ? 4 : $(nproc) ))
 fi
 
+INPUT_NAME=$(basename "$INPUT")
+INPUT_NAME="${INPUT_NAME%.*}"
+
 # Remove any potential characters that might cause issues in folder names
 FOLDER1=$(echo "$FLAG" | sed ' s/--//g; s/=//g; s/ //g; s/:/_/g')
 # Get last 120 characters of flags for folder name to prevent length issues
@@ -213,4 +216,4 @@ rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" &&
 rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.json" 
 SIZE=$(du "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" | awk '{print $1}') &&
 BITRATE=$(ffprobe -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
-echo -n "$COMMIT,$SIZE,$TYPE,$PRESET,$BITRATE,$FIRST_TIME,$SECOND_TIME,$DECODE_TIME," > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"
+echo -n "aomenc,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}," > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"

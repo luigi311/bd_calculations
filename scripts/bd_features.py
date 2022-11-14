@@ -27,6 +27,7 @@ import csv
 import argparse
 from pathlib import Path
 
+
 def bdsnr(metric_set1, metric_set2):
     """
     BJONTEGAARD    Bjontegaard metric calculation
@@ -130,59 +131,172 @@ def bdrate(metric_set1, metric_set2):
 
     return avg_diff
 
+
 def avg(lst):
     return sum(lst) / len(lst)
 
-parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('--input', '-i', type=Path, help='Input File')
-parser.add_argument('--output', '-o', type=Path, default=Path('bd_rates.csv'), help='Output File')
-parser.add_argument('--baseline', '-b', type=str, help='Previous Hash', required=True)
-parser.add_argument('--vmaf', '-v', type=int, help='VMAF column', required=True)
-args = parser.parse_args()
 
-with open(args.input) as csvfile:
-    reader = csv.reader(csvfile, delimiter=',')
-    next(reader)  # Skip headers
-    data = list(reader)
+numbers = {
+    "encoder": 0,
+    "commit": 1,
+    "preset": 2,
+    "video": 3,
+    "size": 4,
+    "type": 5,
+    "bitrate": 6,
+    "first_time": 7,
+    "second_time": 8,
+    "decode_time": 9,
+    "vmaf": 10,
+    "ssimcra2": 11,
+}
 
-flags = list(set([x[0] for x in data]))
 
-ls = []
-baseline = args.baseline
+def calculate_metrics(baseline_dataset, dataset, metric_column):
+    baseline = [
+        (float(x[numbers["bitrate"]]), float(x[metric_column])) for x in baseline_dataset
+    ]
+    target = [(float(x[numbers["bitrate"]]), float(x[metric_column])) for x in dataset]
+    return round(bdrate(baseline, target), 3)
 
-baseline_list = [x for x in data if x[0] == baseline]
-encode_baseline_time = avg([(float(x[5]) + float(x[6])) for x in baseline_list])
-decode_baseline_time = avg([float(x[7]) for x in baseline_list])
 
-for flag in flags:
-    if flag == baseline:
-        continue
+def baseline_check(row, args):
+    return (row[numbers["encoder"]] == args.encoder) and (row[numbers["commit"]] == args.commit and (row[numbers["preset"]] == args.preset))
 
-    flag_list = [x for x in data if x[0] == flag]
 
-    baseline_vmaf = [(float(x[4]), float(x[args.vmaf])) for x in baseline_list]
-    flag_vmaf = [(float(x[4]), float(x[args.vmaf])) for x in flag_list]
-    bdrate_vmaf = round(bdrate(baseline_vmaf,flag_vmaf), 3)
-    vmaf = bdrate_vmaf
+def main():
+    parser = argparse.ArgumentParser(description="Process some integers.")
+    parser.add_argument("--input", "-i", type=Path, help="Input File")
+    parser.add_argument(
+        "--output", "-o", type=Path, default=Path("bd_rates.csv"), help="Output File"
+    )
+    parser.add_argument(
+        "--encoder", "-e", type=str, help="Baseline Encoder", required=True
+    )
+    parser.add_argument(
+        "--commit", "-c", type=str, help="Baseline Commit", required=True
+    )
+    parser.add_argument(
+        "--preset", "-p", type=str, help="Baseline Preset", required=True
+    )
 
-    # Calculate time percentage difference
-    if encode_baseline_time != 0:
-        encode_flag_time = avg([(float(x[5]) + float(x[6])) for x in flag_list])
-        encode_time_diff = round(((encode_flag_time - encode_baseline_time) / encode_baseline_time * 100), 2)
-    else:
-        encode_time_diff = 0
+    args = parser.parse_args()
 
-    if decode_baseline_time != 0:
-        decode_flag_time = avg([float(x[7]) for x in flag_list])
-        decode_time_diff = round(((decode_flag_time - decode_baseline_time) / decode_baseline_time * 100), 2)
-    else:
-        decode_time_diff = 0
+    with open(args.input) as csvfile:
+        reader = csv.reader(csvfile, delimiter=",")
+        next(reader)  # Skip headers
+        data = list(reader)
 
-    ls.append((flag, encode_time_diff, decode_time_diff, vmaf))
+    commits = list(set([x[numbers["commit"]] for x in data]))
 
-ls.sort(key=lambda x: x[1])
-with open (args.output, 'w') as csvfile:
-    csvwriter = csv.writer(csvfile, delimiter=',')
-    csvwriter.writerow(['Commit', 'Encode Time Diff Pct', 'Decode Time Diff Pct', 'VMAF'])
-    for x in ls:
-        csvwriter.writerow(x)
+    ls = []
+
+    baseline_list = [
+        x
+        for x in data
+        if x[numbers["encoder"]] == args.encoder
+        and x[numbers["commit"]] == args.commit
+        and x[numbers["preset"]] == args.preset
+    ]
+
+    video = baseline_list[0][numbers["video"]]
+
+    encode_baseline_time = avg(
+        [
+            (float(x[numbers["first_time"]]) + float(x[numbers["second_time"]]))
+            for x in baseline_list
+        ]
+    )
+    decode_baseline_time = avg([float(x[numbers["decode_time"]]) for x in baseline_list])
+
+    for commit in commits:
+        # Get the data for this commit not including if the commit and preset are the same as the baseline
+        dataset = [ x for x in data if x[numbers["commit"]] == commit and not baseline_check(x, args) ]
+
+        dataset_by_preset = []
+
+        # Generate the data for this commit by preset and add it to the dataset by preset
+        for preset in list(set([x[numbers["preset"]] for x in dataset])):
+            dataset_by_preset.append(
+                [x for x in dataset if x[numbers["preset"]] == preset]
+            )
+
+        for preset_dataset in dataset_by_preset:
+            target_encoder = preset_dataset[0][numbers["encoder"]]
+            target_commit = preset_dataset[0][numbers["commit"]]
+            target_preset = preset_dataset[0][numbers["preset"]]
+
+            vmaf = calculate_metrics(baseline_list, preset_dataset, numbers["vmaf"])
+
+            # Calculate time percentage difference
+            if encode_baseline_time != 0:
+                encode_flag_time = avg(
+                    [
+                        (float(x[numbers["first_time"]]) + float(x[numbers["second_time"]]))
+                        for x in preset_dataset
+                    ]
+                )
+                encode_time_diff = round(
+                    (
+                        (encode_flag_time - encode_baseline_time)
+                        / encode_baseline_time
+                        * 100
+                    ),
+                    2,
+                )
+            else:
+                encode_time_diff = 0
+
+            if decode_baseline_time != 0:
+                decode_flag_time = avg(
+                    [float(x[numbers["decode_time"]]) for x in preset_dataset]
+                )
+                decode_time_diff = round(
+                    (
+                        (decode_flag_time - decode_baseline_time)
+                        / decode_baseline_time
+                        * 100
+                    ),
+                    2,
+                )
+            else:
+                decode_time_diff = 0
+
+            ls.append(
+                (
+                    args.encoder,
+                    args.commit,
+                    args.preset,
+                    target_encoder,
+                    target_commit,
+                    target_preset,
+                    video,
+                    encode_time_diff,
+                    decode_time_diff,
+                    vmaf,
+                )
+            )
+
+    ls.sort(key=lambda x: x[1])
+    with open(args.output, "w") as csvfile:
+        csvwriter = csv.writer(csvfile, delimiter=",")
+        csvwriter.writerow(
+            [
+                "Baseline Encoder",
+                "Baseline Commit",
+                "Baseline Preset",
+                "Target Encoder",
+                "Target Commit",
+                "Target Preset",
+                "Video",
+                "Encode Time Diff Pct",
+                "Decode Time Diff Pct",
+                "VMAF",
+            ]
+        )
+        for x in ls:
+            csvwriter.writerow(x)
+
+
+if __name__ == "__main__":
+    main()
