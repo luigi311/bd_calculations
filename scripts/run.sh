@@ -13,7 +13,7 @@ calculate_bd() {
     find "${OUTPUTFINAL}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}"
 
     if [ -n "$LASTHASH" ] && [ "$FOUND" -eq 1 ]; then
-        scripts/bd_features.py --input "${TEMP_CSV}" --output "${TEMP_CSV%.csv}_bd_rates.csv" --baseline "${LASTHASH}" --metric "${2}"
+        scripts/bd_features.py --input "${TEMP_CSV}" --output "${TEMP_CSV%.csv}_bd_rates.csv" --baseline "${LASTHASH}" --vmaf "${2}"
     fi
 
 }
@@ -388,6 +388,6 @@ echo "Creating CSV"
 find "$OUTPUTFINAL" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' FOLDER
 do
     PRESET=$(basename "${FOLDER}")
-    calculate_bd "$PRESET" 7
+    calculate_bd "$PRESET" 8
 done
 

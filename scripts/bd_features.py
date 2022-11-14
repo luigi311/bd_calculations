@@ -137,7 +137,7 @@ parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('--input', '-i', type=Path, help='Input File')
 parser.add_argument('--output', '-o', type=Path, default=Path('bd_rates.csv'), help='Output File')
 parser.add_argument('--baseline', '-b', type=str, help='Previous Hash', required=True)
-parser.add_argument('--metric', '-m', type=int, help='Metric column', required=True)
+parser.add_argument('--vmaf', '-v', type=int, help='VMAF column', required=True)
 args = parser.parse_args()
 
 with open(args.input) as csvfile:
@@ -160,10 +160,10 @@ for flag in flags:
 
     flag_list = [x for x in data if x[0] == flag]
 
-    baseline_metric = [(float(x[4]), float(x[args.metric])) for x in baseline_list]
-    flag_metric = [(float(x[4]), float(x[args.metric])) for x in flag_list]
-    bdrate_stats = round(bdrate(baseline_metric,flag_metric), 3)
-    stats = bdrate_stats
+    baseline_vmaf = [(float(x[4]), float(x[args.vmaf])) for x in baseline_list]
+    flag_vmaf = [(float(x[4]), float(x[args.vmaf])) for x in flag_list]
+    bdrate_vmaf = round(bdrate(baseline_vmaf,flag_vmaf), 3)
+    vmaf = bdrate_vmaf
 
     # Calculate time percentage difference
     if encode_baseline_time != 0:
@@ -178,11 +178,11 @@ for flag in flags:
     else:
         decode_time_diff = 0
 
-    ls.append((flag, stats, encode_time_diff, decode_time_diff))
+    ls.append((flag, encode_time_diff, decode_time_diff, vmaf))
 
 ls.sort(key=lambda x: x[1])
 with open (args.output, 'w') as csvfile:
     csvwriter = csv.writer(csvfile, delimiter=',')
-    csvwriter.writerow(['Commit', 'VMAF', 'Encode Time Diff Pct', 'Decode Time Diff Pct'])
+    csvwriter.writerow(['Commit', 'Encode Time Diff Pct', 'Decode Time Diff Pct', 'VMAF'])
     for x in ls:
         csvwriter.writerow(x)
