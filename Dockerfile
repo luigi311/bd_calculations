@@ -102,6 +102,13 @@ RUN git checkout mt-test && cargo build --release && \
     cp target/release/ssimulacra2_rs /usr/local/bin
 
 
+# Install dav1d
+RUN git clone https://code.videolan.org/videolan/dav1d.git /dav1d
+WORKDIR /dav1d
+RUN meson build --default-library=static && \
+    ninja -vC build && \
+    ninja -vC build install
+
 WORKDIR /app
 COPY . /app
 

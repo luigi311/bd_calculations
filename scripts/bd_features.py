@@ -191,91 +191,94 @@ def main():
 
     ls = []
 
-    baseline_list = [
-        x
-        for x in data
-        if x[numbers["encoder"]] == args.encoder
-        and x[numbers["commit"]] == args.commit
-        and x[numbers["preset"]] == args.preset
-    ]
+    videos = list(set([x[numbers["video"]] for x in data]))
 
-    video = baseline_list[0][numbers["video"]]
+    for video in videos:
 
-    encode_baseline_time = avg(
-        [
-            (float(x[numbers["first_time"]]) + float(x[numbers["second_time"]]))
-            for x in baseline_list
+        baseline_list = [
+            x
+            for x in data
+            if x[numbers["encoder"]] == args.encoder
+            and x[numbers["commit"]] == args.commit
+            and x[numbers["preset"]] == args.preset
+            and x[numbers["video"]] == video
         ]
-    )
-    decode_baseline_time = avg([float(x[numbers["decode_time"]]) for x in baseline_list])
 
-    for commit in commits:
-        # Get the data for this commit not including if the commit and preset are the same as the baseline
-        dataset = [ x for x in data if x[numbers["commit"]] == commit and not baseline_check(x, args) ]
+        encode_baseline_time = avg(
+            [
+                (float(x[numbers["first_time"]]) + float(x[numbers["second_time"]]))
+                for x in baseline_list
+            ]
+        )
+        decode_baseline_time = avg([float(x[numbers["decode_time"]]) for x in baseline_list])
 
-        dataset_by_preset = []
+        for commit in commits:
+            # Get the data for this commit not including if the commit and preset are the same as the baseline
+            dataset = [ x for x in data if x[numbers["commit"]] == commit and x[numbers["video"]] == video and not baseline_check(x, args) ]
 
-        # Generate the data for this commit by preset and add it to the dataset by preset
-        for preset in list(set([x[numbers["preset"]] for x in dataset])):
-            dataset_by_preset.append(
-                [x for x in dataset if x[numbers["preset"]] == preset]
-            )
+            dataset_by_preset = []
 
-        for preset_dataset in dataset_by_preset:
-            target_encoder = preset_dataset[0][numbers["encoder"]]
-            target_commit = preset_dataset[0][numbers["commit"]]
-            target_preset = preset_dataset[0][numbers["preset"]]
-
-            vmaf = calculate_metrics(baseline_list, preset_dataset, numbers["vmaf"])
-
-            # Calculate time percentage difference
-            if encode_baseline_time != 0:
-                encode_flag_time = avg(
-                    [
-                        (float(x[numbers["first_time"]]) + float(x[numbers["second_time"]]))
-                        for x in preset_dataset
-                    ]
+            # Generate the data for this commit by preset and add it to the dataset by preset
+            for preset in list(set([x[numbers["preset"]] for x in dataset])):
+                dataset_by_preset.append(
+                    [x for x in dataset if x[numbers["preset"]] == preset]
                 )
-                encode_time_diff = round(
+
+            for preset_dataset in dataset_by_preset:
+                target_encoder = preset_dataset[0][numbers["encoder"]]
+                target_commit = preset_dataset[0][numbers["commit"]]
+                target_preset = preset_dataset[0][numbers["preset"]]
+
+                vmaf = calculate_metrics(baseline_list, preset_dataset, numbers["vmaf"])
+
+                # Calculate time percentage difference
+                if encode_baseline_time != 0:
+                    encode_flag_time = avg(
+                        [
+                            (float(x[numbers["first_time"]]) + float(x[numbers["second_time"]]))
+                            for x in preset_dataset
+                        ]
+                    )
+                    encode_time_diff = round(
+                        (
+                            (encode_flag_time - encode_baseline_time)
+                            / encode_baseline_time
+                            * 100
+                        ),
+                        2,
+                    )
+                else:
+                    encode_time_diff = 0
+
+                if decode_baseline_time != 0:
+                    decode_flag_time = avg(
+                        [float(x[numbers["decode_time"]]) for x in preset_dataset]
+                    )
+                    decode_time_diff = round(
+                        (
+                            (decode_flag_time - decode_baseline_time)
+                            / decode_baseline_time
+                            * 100
+                        ),
+                        2,
+                    )
+                else:
+                    decode_time_diff = 0
+
+                ls.append(
                     (
-                        (encode_flag_time - encode_baseline_time)
-                        / encode_baseline_time
-                        * 100
-                    ),
-                    2,
+                        args.encoder,
+                        args.commit,
+                        args.preset,
+                        target_encoder,
+                        target_commit,
+                        target_preset,
+                        video,
+                        encode_time_diff,
+                        decode_time_diff,
+                        vmaf,
+                    )
                 )
-            else:
-                encode_time_diff = 0
-
-            if decode_baseline_time != 0:
-                decode_flag_time = avg(
-                    [float(x[numbers["decode_time"]]) for x in preset_dataset]
-                )
-                decode_time_diff = round(
-                    (
-                        (decode_flag_time - decode_baseline_time)
-                        / decode_baseline_time
-                        * 100
-                    ),
-                    2,
-                )
-            else:
-                decode_time_diff = 0
-
-            ls.append(
-                (
-                    args.encoder,
-                    args.commit,
-                    args.preset,
-                    target_encoder,
-                    target_commit,
-                    target_preset,
-                    video,
-                    encode_time_diff,
-                    decode_time_diff,
-                    vmaf,
-                )
-            )
 
     ls.sort(key=lambda x: x[1])
     with open(args.output, "w") as csvfile:
