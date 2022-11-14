@@ -385,7 +385,7 @@ parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $R
 
 
 echo "Calculating Metrics"
-find "$OUTPUTFINAL" -name "*.mkv" | parallel -j "$METRIC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference "$INPUT" --nthreads "$N_THREADS"
+find "$OUTPUTFINAL" -name "*.mkv" | parallel -j "$METRIC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference \""$INPUT"\" --nthreads "$N_THREADS"
 
 echo "Creating CSV"
 find "$OUTPUTFINAL" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' FOLDER
