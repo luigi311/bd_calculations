@@ -381,7 +381,7 @@ mkdir -p "${OUTPUTFINAL}"
 
 # shellcheck disable=SC2086
 echo "Encoding"
-parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "$PRESET_FILE" -a "$BD_FILE" "scripts/${ENCODER}.sh" --input "$INPUT" --output "${OUTPUTFINAL}/{1}" --threads "$THREADS" "$ENCODING" --quality "{2}" --preset "{1}" --flag "baseline" --commit "$HASH" $PASS $DECODE
+parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "$PRESET_FILE" -a "$BD_FILE" "scripts/${ENCODER}.sh" --input \""$INPUT"\" --output \""${OUTPUTFINAL}/{1}"\" --threads "$THREADS" "$ENCODING" --quality "{2}" --preset "{1}" --flag "baseline" --commit "$HASH" $PASS $DECODE
 
 
 echo "Calculating Metrics"

@@ -189,14 +189,14 @@ else
 fi
 
 mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
-BASE="ffmpeg -y -hide_banner -loglevel error -i $INPUT -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | aomenc --ivf --threads=$THREADS -b 10 --cpu-used=$PRESET $QUALITY_SETTINGS $FLAG"
+BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | aomenc --ivf --threads=$THREADS -b 10 --cpu-used=$PRESET $QUALITY_SETTINGS $FLAG"
 
 if [ "$PASS" == 1 ]; then
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE -o $OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf - > /dev/null 2>&1" 2>&1 | awk ' /Sec/ { print $2 }')
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" - > /dev/null 2>&1" 2>&1 | awk ' /Sec/ { print $2 }')
     SECOND_TIME=0
 elif [ "$PASS" == 2 ]; then
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --passes=2 --pass=1 --fpf=$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log -o /dev/null - > /dev/null 2>&1" 2>&1 | awk ' /Sec/ { print $2 }')
-    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --passes=2 --pass=2 --fpf=$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log -o $OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf - 2>&1" 2>&1 | awk ' /Sec/ { print $2 }')
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --passes=2 --pass=1 --fpf=\"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -o /dev/null - > /dev/null 2>&1" 2>&1 | awk ' /Sec/ { print $2 }')
+    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --passes=2 --pass=2 --fpf=\"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" - 2>&1" 2>&1 | awk ' /Sec/ { print $2 }')
 fi
 
 ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" -c:v copy "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1)
@@ -206,7 +206,7 @@ if [ -n "$ERROR" ]; then
 fi
 
 if [ "$DECODE" -ne -1 ]; then
-    DECODE_TIME=$(env time --format="Sec %e" bash -c " dav1d -i $OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
+    DECODE_TIME=$(env time --format="Sec %e" bash -c " dav1d -i \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
 else
     DECODE_TIME=0
 fi
@@ -214,6 +214,7 @@ fi
 rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log" &&
 rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" &&
 rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.json" 
+
 SIZE=$(du "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" | awk '{print $1}') &&
 BITRATE=$(ffprobe -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
 echo -n "aomenc,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}," > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"
