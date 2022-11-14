@@ -73,9 +73,13 @@ if [ "$VMAF" == "null" ]; then
     VMAF=$(jq '.["VMAF score"]' "${FILE}.json")
 fi
 
+# Keep only the first 10 columns in $File.stats to remove any metrics if they exists
+awk -F, 'NR==1{printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' "${FILE}.stats" > "${FILE}.tempstats"
+mv "${FILE}.tempstats" "${FILE}.stats"
+
 if [ -n "$VMAF" ]; then
-    printf "%s" "$VMAF" >> "$FILE.stats"
-    #rm "${FILE}.json"
+    printf "%s" ",$VMAF" >> "$FILE.stats"
+    rm "${FILE}.json"
 else
     printf "%s" "$VMAF"
     die "Failed to generate VMAF info ${OUTPUT}"
@@ -83,7 +87,7 @@ fi
 
 
 ## SSIMULACRA2
-#OUTPUT=$(ssimulacra2_rs video "$REFERENCE" "$DISTORTED")
+#OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
 #
 #SSIM2=$(echo "$OUTPUT" | awk ' { print $7 } ')
 #

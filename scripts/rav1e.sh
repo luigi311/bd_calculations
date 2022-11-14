@@ -8,7 +8,7 @@ die() {
 
 help() {
     help="$(cat <<EOF
-Test x265 flag, will gather stats such as file size, duration of first pass and second pass and put them in a csv.
+Test rav1e flag, will gather stats such as file size, duration of first pass and second pass and put them in a csv.
 Usage: 
     ./encoder.sh [options]
 Example:
@@ -172,41 +172,38 @@ if [ "$VBR" -ne -1 ]; then
     QUALITY_SETTINGS="--bitrate ${QUALITY}"
 elif [ "$CRF" -ne -1 ]; then
     TYPE="crf${QUALITY}"
-    QUALITY_SETTINGS="--crf ${QUALITY}"
+    QUALITY_SETTINGS="--quantizer ${QUALITY}"
 else
     TYPE="crf${QUALITY}"
-    QUALITY_SETTINGS="--crf ${QUALITY}"
+    QUALITY_SETTINGS="--quantizer ${QUALITY}"
 fi
 
 mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
-BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | x265 --log-level 0 --no-progress --input - --y4m --pools ${THREADS} --preset ${PRESET} ${QUALITY_SETTINGS}"
+BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | rav1e -y - --threads $THREADS --tiles $THREADS --speed $PRESET $QUALITY_SETTINGS $FLAG"
 
 if [ "$VBR" -ne -1 ] || [ "$PASS" -eq 1 ]; then
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 1 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
-    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 2 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h265\"" 2>&1 | awk ' /Sec/ { print $2 }')
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --first-pass \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" --output /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
+    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --second-pass \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" --output \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\"" 2>&1 | awk ' /Sec/ { print $2 }')
 else
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h265\" " 2>&1 | awk ' /Sec/ { print $2 }')
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --output \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" " 2>&1 | awk ' /Sec/ { print $2 }')
     SECOND_TIME=0
 fi
-
-ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.h265" -c copy "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.mp4" 2>&1)
-ERROR2=$(ffmpeg -y -hide_banner -loglevel error -i "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.mp4" -c copy "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.mkv" 2>&1)
-if [ -n "$ERROR" ] || [ -n "$ERROR2" ]; then
-    die "$FLAG failed ${ERROR} ${ERROR2}"
+ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" -c:v copy "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1)
+if [ -n "$ERROR" ]; then
+    rm -rf "$OUTPUT/${FOLDER}_$TYPE"
+    die "$FLAG failed"
 fi
 
 if [ "$DECODE" -ne -1 ]; then
-    DECODE_TIME=$(env time --format="Sec %e" bash -c " ffmpeg -hide_banner -loglevel error -i \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv\" -f null -" 2>&1 | awk ' /Sec/ { print $2 }')
+    DECODE_TIME=$(env time --format="Sec %e" bash -c " dav1d -i \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
 else
     DECODE_TIME=0
 fi
 
 rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.webm" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h265" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mp4" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log.cutree" 
+rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" &&
+rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.json" 
 
 SIZE=$(du "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" | awk '{print $1}') &&
 BITRATE=$(ffprobe -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
-echo -n "x265,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"
+echo -n "rav1e,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"

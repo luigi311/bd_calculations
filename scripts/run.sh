@@ -292,7 +292,7 @@ elif [ "$CQ" -ne -1 ]; then
         die "cq is not supported by $ENCODER"
     fi
 elif [ "$VBR" -ne -1 ]; then
-    if [ "$ENCODER" == "aomenc" ] || [ "$ENCODER" == "svt-av1" ] || [ "$ENCODER" == "x265" ] || [ "$ENCODER" == "x264" ]; then
+    if [ "$ENCODER" == "aomenc" ] || [ "$ENCODER" == "svt-av1" ] || [ "$ENCODER" == "x265" ] || [ "$ENCODER" == "x264" ] || [ "$ENCODER" == "rav1e" ]; then
         ENCODING="--vbr"
     else
         die "vbr is not supported by $ENCODER"
@@ -364,11 +364,11 @@ mkdir -p "${OUTPUT}"
 
 # Get hash
 HASH=$(cd "/${ENCODER}" && git rev-parse HEAD)
-LASTHASH=$(ls -lt "${OUTPUT}/${ENCODER}" | awk 'NR==2{ print $9 }')
+LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
 
 if [ "$LASTHASH" == "$HASH" ]; then
     echo "Hashes match, going back further"
-    LASTHASH=$(ls -lt "${OUTPUT}/${ENCODER}" | awk 'NR==3{ print $9 }')
+    LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==2{ print $2 }')
 fi
 
 echo "Last hash: $LASTHASH"
@@ -379,7 +379,6 @@ VIDEO=$(basename "$INPUT" | sed 's/\(.*\)\..*/\1/')
 OUTPUTFINAL="${OUTPUT}/${ENCODER}/${HASH}/${VIDEO}"
 mkdir -p "${OUTPUTFINAL}"
 
-# shellcheck disable=SC2086
 echo "Encoding"
 parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "$PRESET_FILE" -a "$BD_FILE" "scripts/${ENCODER}.sh" --input \""$INPUT"\" --output \""${OUTPUTFINAL}/{1}"\" --threads "$THREADS" "$ENCODING" --quality "{2}" --preset "{1}" --flag "baseline" --commit "$HASH" $PASS $DECODE
 
