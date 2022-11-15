@@ -179,13 +179,13 @@ else
 fi
 
 mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
-BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | rav1e -y - --threads $THREADS --tiles $THREADS --speed $PRESET $QUALITY_SETTINGS $FLAG"
+BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | rav1e -y - --threads $THREADS --tiles $THREADS $QUALITY_SETTINGS $FLAG"
 
 if [ "$VBR" -ne -1 ] || [ "$PASS" -eq 1 ]; then
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --first-pass \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" --output /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
-    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --second-pass \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" --output \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\"" 2>&1 | awk ' /Sec/ { print $2 }')
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --speed 10 --first-pass \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" --output /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
+    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --speed $PRESET --second-pass \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" --output \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\"" 2>&1 | awk ' /Sec/ { print $2 }')
 else
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --output \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" " 2>&1 | awk ' /Sec/ { print $2 }')
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --speed $PRESET --output \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" " 2>&1 | awk ' /Sec/ { print $2 }')
     SECOND_TIME=0
 fi
 ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" -c:v copy "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1)
