@@ -4,14 +4,9 @@ set -e
 
 CONTAINER_SYSTEM="podman"
 
-#podman image prune -a -f
-
-#podman build -t "bd-compare" .
-
 # Run via CONTAINER_SYSTEM
 
 $CONTAINER_SYSTEM image prune -a -f
-
 $CONTAINER_SYSTEM build -t "bd-compare" .
 
 SOURCE="${HOME}/Videos"
