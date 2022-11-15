@@ -3,6 +3,7 @@
 set -e
 
 CONTAINER_SYSTEM="podman"
+SOURCE="${HOME}/Videos"
 
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 while :; do
@@ -14,6 +15,14 @@ while :; do
         -c | --container)
             if [ "$2" ]; then
                 CONTAINER_SYSTEM="$2"
+                shift
+            else
+                die "ERROR: $1 requires a non-empty option argument."
+            fi
+            ;;
+        -s | --source)
+            if [ "$2" ]; then
+                SOURCE="$2"
                 shift
             else
                 die "ERROR: $1 requires a non-empty option argument."
@@ -38,7 +47,6 @@ done
 $CONTAINER_SYSTEM image prune -a -f
 $CONTAINER_SYSTEM build -t "bd-compare" .
 
-SOURCE="${HOME}/Videos"
 ENCODERS=("x265" "aomenc" "rav1e" "svt-av1")
 VIDEOS=("Big Buck Bunny.mkv")
 THREADS=$(nproc --all)
