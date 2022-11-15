@@ -4,18 +4,49 @@ set -e
 
 CONTAINER_SYSTEM="podman"
 
+# Source: http://mywiki.wooledge.org/BashFAQ/035
+while :; do
+    case "$1" in
+        -h | -\? | --help)
+            help
+            exit 0
+            ;;
+        -c | --container)
+            if [ "$2" ]; then
+                CONTAINER_SYSTEM="$2"
+                shift
+            else
+                die "ERROR: $1 requires a non-empty option argument."
+            fi
+            ;;
+        --) # End of all options.
+            shift
+            break
+            ;;
+        -?*)
+            die "Error: Unknown option : $1"
+            ;;
+        *) # Default case: No more options, so break out of the loop.
+            break ;;
+    esac
+    shift
+done
+
+
 # Run via CONTAINER_SYSTEM
 
 $CONTAINER_SYSTEM image prune -a -f
 $CONTAINER_SYSTEM build -t "bd-compare" .
 
 SOURCE="${HOME}/Videos"
-ENCODERS=("x265" "aomenc" "rav1e")
+ENCODERS=("x265" "aomenc" "rav1e" "svt-av1")
 VIDEOS=("Big Buck Bunny.mkv")
+THREADS=$(nproc --all)
+ENC_WORKERS=1
 
 for ENCODER in "${ENCODERS[@]}"; do
     for VIDEO in "${VIDEOS[@]}"; do
-        $CONTAINER_SYSTEM run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e 2 --threads 6 --decode --vbr --resume
+        $CONTAINER_SYSTEM run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
     done
 done
 

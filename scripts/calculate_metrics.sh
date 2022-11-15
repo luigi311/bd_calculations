@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 die() {
     printf '%s\n' "$1" >&2

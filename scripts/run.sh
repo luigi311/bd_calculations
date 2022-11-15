@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e
+
 calculate_bd() {
     FOUND=0
 
@@ -360,7 +362,7 @@ if [ "$SAMPLES" -ne -1 ]; then
 fi
 
 
-mkdir -p "${OUTPUT}"
+mkdir -p "${OUTPUT}/${ENCODER}"
 
 # Get hash
 HASH=$(cd "/${ENCODER}" && git rev-parse HEAD)

@@ -31,7 +31,8 @@ RUN apt-get update && \
         libavfilter-dev \
         libavdevice-dev \
         clang \
-        libfontconfig-dev && \
+        libfontconfig-dev \
+        bc && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
