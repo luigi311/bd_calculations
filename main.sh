@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 
-podman image prune -a -f
-podman build -t "bd-compare" .
+set -e
+
+CONTAINER_SYSTEM="podman"
+
+#podman image prune -a -f
+
+#podman build -t "bd-compare" .
+
+# Run via CONTAINER_SYSTEM
+
+$CONTAINER_SYSTEM image prune -a -f
+
+$CONTAINER_SYSTEM build -t "bd-compare" .
 
 SOURCE="${HOME}/Videos"
 ENCODERS=("x265" "aomenc" "rav1e")
@@ -9,7 +20,7 @@ VIDEOS=("Big Buck Bunny.mkv")
 
 for ENCODER in "${ENCODERS[@]}"; do
     for VIDEO in "${VIDEOS[@]}"; do
-        podman run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e 2 --threads 6 --decode --vbr --resume
+        $CONTAINER_SYSTEM run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e 2 --threads 6 --decode --vbr --resume
     done
 done
 
