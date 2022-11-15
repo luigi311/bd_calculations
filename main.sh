@@ -9,7 +9,7 @@ VIDEOS=("Big Buck Bunny.mkv")
 
 for ENCODER in "${ENCODERS[@]}"; do
     for VIDEO in "${VIDEOS[@]}"; do
-        podman run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e 2 --threads 4 --decode --vbr --resume
+        podman run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e 2 --threads 6 --decode --vbr --resume
     done
 done
 
