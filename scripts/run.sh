@@ -146,7 +146,7 @@ while :; do
             fi
             ;;
         --resume)
-            RESUME="--resume"
+            RESUME="--resume --resume-failed"
             ;;
         -t | --threads)
             if [ "$2" ]; then
