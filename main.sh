@@ -15,7 +15,7 @@ get_remote_commit() {
 get_docker_commit() {
     local COMMIT
     
-    COMMIT=$(${CONTAINER_SYSTEM} run --rm bd-compare /bin/bash -c "cd /${1}; git log --pretty=tformat:'%H' -n1 .")
+    COMMIT=$(${CONTAINER_SYSTEM} run --rm bd_calculations /bin/bash -c "cd /${1}; git log --pretty=tformat:'%H' -n1 .")
     echo "$COMMIT"
 }
 
@@ -39,7 +39,7 @@ update_container_image() {
     if [ "$COMMIT_X265" != "$DOCKER_X265" ] || [ "$COMMIT_AOMENC" != "$DOCKER_AOMENC" ] || [ "$COMMIT_RAV1E" != "$DOCKER_RAV1E" ] || [ "$COMMIT_SVT_AV1" != "$DOCKER_SVT_AV1" ]; then
         echo "Updating container image..."
         
-        if [ -n "$(${CONTAINER_SYSTEM} images -q bd-compare:latest 2> /dev/null)" ]; then
+        if [ -n "$(${CONTAINER_SYSTEM} images -q bd_calculations:latest 2> /dev/null)" ]; then
             echo "x265: $DOCKER_X265 -> $COMMIT_X265"
             echo "aomenc: $DOCKER_AOMENC -> $COMMIT_AOMENC"
             echo "rav1e: $DOCKER_RAV1E -> $COMMIT_RAV1E"
@@ -47,7 +47,7 @@ update_container_image() {
         fi
         
         ${CONTAINER_SYSTEM} image prune -a -f
-        ${CONTAINER_SYSTEM} build -t "bd-compare" .
+        ${CONTAINER_SYSTEM} build -t "bd_calculations" .
     fi
 }
 
@@ -101,7 +101,7 @@ for ENCODER in "${ENCODERS[@]}"; do
     printf "Running %s\n" "$ENCODER"
     for VIDEO in "${VIDEOS[@]}"; do
         printf "%s\n" "$VIDEO"
-        ${CONTAINER_SYSTEM} run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
+        ${CONTAINER_SYSTEM} run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
     done
 done
 

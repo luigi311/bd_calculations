@@ -1,8 +1,15 @@
 FROM docker.io/rust:slim
 
 # Set to noninteractive to fix issue with tzdate
-ARG DEBIAN_FRONTEND=noninteractive
-ARG LDFLAGS="-Wl,--no-as-needed"
+ENV DEBIAN_FRONTEND=noninteractive
+ENV LDFLAGS="-Wl,--no-as-needed"
+
+# Set build march to native
+ENV CFLAGS="-march=native -O3"
+ENV CXXFLAGS="-march=native -O3"
+
+# Build native for rust
+ENV RUSTFLAGS="-Ctarget-cpu=native"
 
 # Install Dependencies
 RUN apt-get update && \
