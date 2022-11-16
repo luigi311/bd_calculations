@@ -5,6 +5,53 @@ set -e
 CONTAINER_SYSTEM="podman"
 SOURCE="${HOME}/Videos"
 
+get_remote_commit() {
+    local COMMIT
+    
+    COMMIT=$(git ls-remote "$1" HEAD | cut -f1)
+    echo "$COMMIT"
+}
+
+get_docker_commit() {
+    local COMMIT
+    
+    COMMIT=$(${CONTAINER_SYSTEM} run --rm bd-compare /bin/bash -c "cd /${1}; git log --pretty=tformat:'%H' -n1 .")
+    echo "$COMMIT"
+}
+
+update_container_image() {
+
+    # Check latest commit for encoders
+    #
+    # Source: https://stackoverflow.com/a/5980382
+
+    COMMIT_X265=$(get_remote_commit "https://github.com/videolan/x265.git")
+    COMMIT_AOMENC=$(get_remote_commit "https://aomedia.googlesource.com/aom")
+    COMMIT_RAV1E=$(get_remote_commit "https://github.com/xiph/rav1e.git")
+    COMMIT_SVT_AV1=$(get_remote_commit "https://gitlab.com/AOMediaCodec/SVT-AV1.git")
+
+    DOCKER_X265=$(get_docker_commit "x265")
+    DOCKER_AOMENC=$(get_docker_commit "aomenc")
+    DOCKER_RAV1E=$(get_docker_commit "rav1e")
+    DOCKER_SVT_AV1=$(get_docker_commit "svt-av1")
+
+    # Check if any of the commits are different
+    if [ "$COMMIT_X265" != "$DOCKER_X265" ] || [ "$COMMIT_AOMENC" != "$DOCKER_AOMENC" ] || [ "$COMMIT_RAV1E" != "$DOCKER_RAV1E" ] || [ "$COMMIT_SVT_AV1" != "$DOCKER_SVT_AV1" ]; then
+        echo "Updating container image..."
+        
+        if [ -n "$(${CONTAINER_SYSTEM} images -q bd-compare:latest 2> /dev/null)" ]; then
+            echo "x265: $DOCKER_X265 -> $COMMIT_X265"
+            echo "aomenc: $DOCKER_AOMENC -> $COMMIT_AOMENC"
+            echo "rav1e: $DOCKER_RAV1E -> $COMMIT_RAV1E"
+            echo "svt-av1: $DOCKER_SVT_AV1 -> $COMMIT_SVT_AV1"
+        fi
+        
+        ${CONTAINER_SYSTEM} image prune -a -f
+        ${CONTAINER_SYSTEM} build -t "bd-compare" .
+    fi
+}
+
+
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 while :; do
     case "$1" in
@@ -42,10 +89,8 @@ while :; do
 done
 
 
-# Run via CONTAINER_SYSTEM
-
-$CONTAINER_SYSTEM image prune -a -f
-$CONTAINER_SYSTEM build -t "bd-compare" .
+# Update container image
+update_container_image
 
 ENCODERS=("x265" "aomenc" "rav1e" "svt-av1")
 VIDEOS=("Big Buck Bunny.mkv")
@@ -56,7 +101,7 @@ for ENCODER in "${ENCODERS[@]}"; do
     printf "Running %s" "$ENCODER"
     for VIDEO in "${VIDEOS[@]}"; do
         printf " %s" "$VIDEO"
-        $CONTAINER_SYSTEM run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
+        ${CONTAINER_SYSTEM} run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
     done
 done
 
