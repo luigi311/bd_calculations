@@ -2,6 +2,7 @@
 
 set -e
 
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 CONTAINER_SYSTEM="podman"
 SOURCE="${HOME}/Videos"
 
@@ -38,16 +39,16 @@ update_container_image() {
     # Check if any of the commits are different
     if [ "$COMMIT_X265" != "$DOCKER_X265" ] || [ "$COMMIT_AOMENC" != "$DOCKER_AOMENC" ] || [ "$COMMIT_RAV1E" != "$DOCKER_RAV1E" ] || [ "$COMMIT_SVT_AV1" != "$DOCKER_SVT_AV1" ]; then
         echo "Updating container image..."
-        
+
         if [ -n "$(${CONTAINER_SYSTEM} images -q bd_calculations:latest 2> /dev/null)" ]; then
             echo "x265: $DOCKER_X265 -> $COMMIT_X265"
             echo "aomenc: $DOCKER_AOMENC -> $COMMIT_AOMENC"
             echo "rav1e: $DOCKER_RAV1E -> $COMMIT_RAV1E"
             echo "svt-av1: $DOCKER_SVT_AV1 -> $COMMIT_SVT_AV1"
         fi
-        
+
         ${CONTAINER_SYSTEM} image prune -a -f
-        ${CONTAINER_SYSTEM} build -t "bd_calculations" .
+        ${CONTAINER_SYSTEM} build -t "bd_calculations" "${SCRIPT_DIR}"
     fi
 }
 
