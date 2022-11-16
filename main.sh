@@ -53,7 +53,9 @@ THREADS=$(nproc --all)
 ENC_WORKERS=1
 
 for ENCODER in "${ENCODERS[@]}"; do
+    printf "Running %s" "$ENCODER"
     for VIDEO in "${VIDEOS[@]}"; do
+        printf " %s" "$VIDEO"
         $CONTAINER_SYSTEM run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd-compare scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
     done
 done
