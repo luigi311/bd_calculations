@@ -2,7 +2,9 @@
 
 set -e
 
+# Source: https://stackoverflow.com/questions/59895/how-do-i-get-the-directory-where-a-bash-script-is-located-from-within-the-script
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 CONTAINER_SYSTEM="podman"
 SOURCE="${HOME}/Videos"
 
@@ -23,9 +25,6 @@ get_docker_commit() {
 update_container_image() {
 
     # Check latest commit for encoders
-    #
-    # Source: https://stackoverflow.com/a/5980382
-
     COMMIT_X265=$(get_remote_commit "https://github.com/videolan/x265.git")
     COMMIT_AOMENC=$(get_remote_commit "https://aomedia.googlesource.com/aom")
     COMMIT_RAV1E=$(get_remote_commit "https://github.com/xiph/rav1e.git")
