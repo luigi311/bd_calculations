@@ -80,7 +80,7 @@ def main():
 
                     # insert row into calculations table
                     cur.execute(
-                        "INSERT INTO calculations (timestamp, baseline_encoder_fkey, baseline_encoder_commit, baseline_encoder_preset, target_encoder_fkey, target_encoder_commit, target_encoder_preset, video_fkey, encode_time_pct, decode_time_pct, vmaf) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                        "INSERT INTO calculations (timestamp, baseline_encoder_fkey, baseline_encoder_commit, baseline_encoder_preset, target_encoder_fkey, target_encoder_commit, target_encoder_preset, video_fkey, encode_time_pct, decode_time_pct, vmaf, ssimulacra2) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                         (
                             timestamp,
                             encoders[row[0]],
@@ -93,6 +93,7 @@ def main():
                             row[7],
                             row[8],
                             row[9],
+                            row[10],
                         ),
                     )
 

@@ -3,7 +3,7 @@
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 die() {
     printf '%s\n' "$1" >&2
-    #exit 1
+    exit 1
 }
 
 N_THREADS=-1
@@ -63,7 +63,7 @@ FILE=${DISTORTED%.mkv}
 LOG=$(ffmpeg -hide_banner -loglevel error -i "$DISTORTED" -i "$REFERENCE" -filter_complex "libvmaf=log_path=${FILE}.json:log_fmt=json:n_threads=${N_THREADS}" -f null - 2>&1)
 
 if [ -n "$LOG" ]; then
-    die "$LOG"
+    printf '%s\n' "$LOG"
 fi
 
 # vmaf 2.X
@@ -77,8 +77,9 @@ fi
 awk -F, 'NR==1{printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' "${FILE}.stats" > "${FILE}.tempstats"
 mv "${FILE}.tempstats" "${FILE}.stats"
 
+VMAF_OUT=""
 if [ -n "$VMAF" ]; then
-    printf "%s" ",$VMAF" >> "$FILE.stats"
+    VMAF_OUT="$VMAF"
     rm "${FILE}.json"
 else
     printf "%s" "$VMAF"
@@ -87,12 +88,19 @@ fi
 
 
 ## SSIMULACRA2
-#OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
-#
-#SSIM2=$(echo "$OUTPUT" | awk ' { print $7 } ')
-#
-#if [ -n "$SSIM2" ]; then
-#    echo -n ",$SSIM2" >> "${FILE}.stats"
-#else
-#    die "Failed to generate SSIM2 info ${OUTPUT}"
-#fi
+OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
+
+SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
+
+SSIM2_OUT=""
+if [ -n "$SSIM2" ]; then
+    SSIM2_OUT="$SSIM2"
+else
+    die "Failed to generate SSIM2 info ${OUTPUT}"
+fi
+
+printf ",%s,%s" "$VMAF_OUT" "$SSIM2_OUT" >> "$FILE.stats"
+
+
+# Delete video file to save space
+rm "$DISTORTED"
