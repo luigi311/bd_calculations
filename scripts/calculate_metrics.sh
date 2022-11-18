@@ -59,6 +59,8 @@ if [ "$N_THREADS" -eq -1 ]; then
 fi
 
 FILE=${DISTORTED%.mkv}
+VMAF_OUT=""
+SSIM2_OUT=""
 
 LOG=$(ffmpeg -hide_banner -loglevel error -i "$DISTORTED" -i "$REFERENCE" -filter_complex "libvmaf=log_path=${FILE}.json:log_fmt=json:n_threads=${N_THREADS}" -f null - 2>&1)
 
@@ -77,7 +79,6 @@ fi
 awk -F, 'NR==1{printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s", $1,$2,$3,$4,$5,$6,$7,$8,$9,$10}' "${FILE}.stats" > "${FILE}.tempstats"
 mv "${FILE}.tempstats" "${FILE}.stats"
 
-VMAF_OUT=""
 if [ -n "$VMAF" ]; then
     VMAF_OUT="$VMAF"
     rm "${FILE}.json"
@@ -88,16 +89,15 @@ fi
 
 
 ## SSIMULACRA2
-OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
-
-SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
-
-SSIM2_OUT=""
-if [ -n "$SSIM2" ]; then
-    SSIM2_OUT="$SSIM2"
-else
-    die "Failed to generate SSIM2 info ${OUTPUT}"
-fi
+#OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
+#
+#SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
+#
+#if [ -n "$SSIM2" ]; then
+#    SSIM2_OUT="$SSIM2"
+#else
+#    die "Failed to generate SSIM2 info ${OUTPUT}"
+#fi
 
 printf ",%s,%s" "$VMAF_OUT" "$SSIM2_OUT" >> "$FILE.stats"
 
