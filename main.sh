@@ -123,12 +123,12 @@ for ENCODER in "${ENCODERS[@]}"; do
     LASTHASH=$(find "${SOURCE}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
     PRESETS=$(find "${SOURCE}/${ENCODER}/${LASTHASH}/" -mindepth 2 -maxdepth 2 -type d -printf "%f\n" | sort -n)
     for PRESET in ${PRESETS}; do
-        scripts/bd_features.py --input "${RESULT_CSV}" --output "${OUTDIR}/${ENCODER}_${PRESET}_bd_rates.csv" --encoder "${ENCODER}" --commit "${LASTHASH}" --preset "${PRESET}"
+        eval "${SCRIPT_DIR}/scripts/bd_features.py" --input "${RESULT_CSV}" --output "${OUTDIR}/${ENCODER}_${PRESET}_bd_rates.csv" --encoder "${ENCODER}" --commit "${LASTHASH}" --preset "${PRESET}"
     done
 done
 
 
 echo "Uploading all BD Features"
 for FILE in "${OUTDIR}"/*_bd_rates.csv; do
-    scripts/upload_metrics.py --input "${FILE}"
+    eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${FILE}"
 done
