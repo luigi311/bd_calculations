@@ -101,7 +101,7 @@ for ENCODER in "${ENCODERS[@]}"; do
     printf "Running %s\n" "$ENCODER"
     for VIDEO in "${VIDEOS[@]}"; do
         printf "%s\n" "$VIDEO"
-        ${CONTAINER_SYSTEM} run --rm -v "${SOURCE}:/videos:z" -v "$(pwd):/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
+        ${CONTAINER_SYSTEM} run --rm -v "${SOURCE}:/videos:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
     done
 done
 
