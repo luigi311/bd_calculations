@@ -116,6 +116,8 @@ for ENCODER in "${ENCODERS[@]}"; do
     find "${SOURCE}/${ENCODER}/${LASTHASH}/" -name '*.stats' -exec awk '{print $0}' {} + >> "${RESULT_CSV}"
 done
 
+echo "Upload results"
+eval "${SCRIPT_DIR}/scripts/upload_metrics.py"  --input "${TEMP_CSV}" --type results
 
 echo "Generating All BD Features"
 OUTDIR=$(dirname "${RESULT_CSV}")
@@ -130,5 +132,5 @@ done
 
 echo "Uploading all BD Features"
 for FILE in "${OUTDIR}"/*_bd_rates.csv; do
-    eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${FILE}"
+    eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${FILE}" --type calculations
 done
