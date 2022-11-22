@@ -117,7 +117,7 @@ for ENCODER in "${ENCODERS[@]}"; do
 done
 
 echo "Upload results"
-eval "${SCRIPT_DIR}/scripts/upload_metrics.py"  --input "${TEMP_CSV}" --type results
+eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${RESULT_CSV}" --type "results"
 
 echo "Generating All BD Features"
 OUTDIR=$(dirname "${RESULT_CSV}")
@@ -132,5 +132,5 @@ done
 
 echo "Uploading all BD Features"
 for FILE in "${OUTDIR}"/*_bd_rates.csv; do
-    eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${FILE}" --type calculations
+    eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${FILE}" --type "calculations"
 done

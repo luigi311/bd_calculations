@@ -18,7 +18,7 @@ calculate_bd() {
         echo "BD Features"
         scripts/bd_features.py --input "${TEMP_CSV}" --output "${TEMP_CSV%.csv}_bd_rates.csv" --encoder "${ENCODER}" --commit "${LASTHASH}" --preset "${1}"
         echo "Upload calculations"
-        scripts/upload_metrics.py --input "${TEMP_CSV%.csv}_bd_rates.csv --type calculations"
+        scripts/upload_metrics.py --input "${TEMP_CSV%.csv}_bd_rates.csv" --type "calculations"
     fi
 
 }
