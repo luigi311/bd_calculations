@@ -365,7 +365,7 @@ fi
 mkdir -p "${OUTPUT}/${ENCODER}"
 
 # Get hash
-HASH=$(cd "/${ENCODER}" && git rev-parse HEAD)
+HASH=$(cat "/${ENCODER}")
 LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
 
 if [ "$LASTHASH" == "$HASH" ]; then
