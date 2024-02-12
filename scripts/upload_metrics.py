@@ -112,7 +112,7 @@ def results(cur, conn, reader, encoders, videos, timestamp):
             continue
 
         # Update videos list
-        videos = add_video_if_not_exist(cur, conn, row[6], videos)
+        videos = add_video_if_not_exist(cur, conn, row[3], videos)
 
         # insert row into calculations table
         cur.execute(
