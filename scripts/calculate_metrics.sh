@@ -89,15 +89,15 @@ fi
 
 
 ## SSIMULACRA2
-#OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
-#
-#SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
-#
-#if [ -n "$SSIM2" ]; then
-#    SSIM2_OUT="$SSIM2"
-#else
-#    die "Failed to generate SSIM2 info ${OUTPUT}"
-#fi
+OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
+
+SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
+
+if [ -n "$SSIM2" ]; then
+    SSIM2_OUT="$SSIM2"
+else
+    die "Failed to generate SSIM2 info ${OUTPUT}"
+fi
 
 printf ",%s,%s" "$VMAF_OUT" "$SSIM2_OUT" >> "$FILE.stats"
 
