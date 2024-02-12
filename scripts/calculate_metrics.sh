@@ -60,7 +60,6 @@ fi
 
 FILE=${DISTORTED%.mkv}
 VMAF_OUT=""
-SSIM2_OUT=""
 
 LOG=$(ffmpeg -hide_banner -loglevel error -i "$DISTORTED" -i "$REFERENCE" -filter_complex "libvmaf=log_path=${FILE}.json:log_fmt=json:n_threads=${N_THREADS}" -f null - 2>&1)
 
@@ -89,18 +88,19 @@ fi
 
 
 ## SSIMULACRA2
-OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
+#SSIM2_OUT=""
+#OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
+#
+#SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
+#
+#if [ -n "$SSIM2" ]; then
+#    SSIM2_OUT="$SSIM2"
+#else
+#    die "Failed to generate SSIM2 info ${OUTPUT}"
+#fi
 
-SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
-
-if [ -n "$SSIM2" ]; then
-    SSIM2_OUT="$SSIM2"
-else
-    die "Failed to generate SSIM2 info ${OUTPUT}"
-fi
-
-printf ",%s,%s" "$VMAF_OUT" "$SSIM2_OUT" >> "$FILE.stats"
-
+#printf ",%s,%s" "$VMAF_OUT" "$SSIM2_OUT" >> "$FILE.stats"
+printf ",%s" "$VMAF_OUT" >> "$FILE.stats"
 
 # Delete video file to save space
 #rm "$DISTORTED"
