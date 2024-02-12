@@ -82,5 +82,9 @@ RUN cargo build --release && \
 WORKDIR /app
 COPY . /app
 
-RUN chmod +x scripts/* && \
+RUN chmod +x scripts/*
+    
+ENV PATH="/opt/venv/bin:$PATH"
+
+RUN python -m venv /opt/venv && \
     pip install -r requirements.txt
