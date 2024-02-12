@@ -77,7 +77,18 @@ def calculations(cur, conn, reader, encoders, videos, timestamp):
 
         # insert row into calculations table
         cur.execute(
-            "INSERT INTO calculations (timestamp, baseline_encoder_fkey, baseline_encoder_commit, baseline_encoder_preset, target_encoder_fkey, target_encoder_commit, target_encoder_preset, video_fkey, encode_time_pct, decode_time_pct, vmaf) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            """INSERT INTO calculations (timestamp
+                , baseline_encoder_fkey
+                , baseline_encoder_commit
+                , baseline_encoder_preset
+                , target_encoder_fkey
+                , target_encoder_commit
+                , target_encoder_preset
+                , video_fkey
+                , encode_time_pct
+                , decode_time_pct
+                , vmaf
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (
                 timestamp,
                 encoders[row[0]],
@@ -105,7 +116,19 @@ def results(cur, conn, reader, encoders, videos, timestamp):
 
         # insert row into calculations table
         cur.execute(
-            "INSERT INTO results (timestamp, encoder_fkey, commit, preset, video_fkey, size, quality, bitrate, first_encode_time, second_encode_time, decode_time, vmaf) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            """INSERT INTO results (timestamp
+                , encoder_fkey
+                , commit
+                , preset
+                , video_fkey
+                , size
+                , quality
+                , bitrate
+                , first_encode_time
+                , second_encode_time
+                , decode_time
+                , vmaf
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (
                 timestamp,
                 encoders[row[0]],
