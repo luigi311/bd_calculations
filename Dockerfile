@@ -53,6 +53,9 @@ RUN yay -Sy --batchinstall --noconfirm x264-git x265-git rav1e-git svt-av1-git &
     cd ~/.cache/yay/aom-git/aom/ && git log --pretty=tformat:'%H' -n1 . > ~/aomenc && \
     yes | yay -Scc
 
+RUN yay -Sy --batchinstall --noconfirm ssimulacra2_bin-git && \
+    yes | yay -Scc
+
 USER root
 
 # Move hash commits to root
@@ -73,12 +76,6 @@ RUN  rav1e --help
 
 # Test svt-av1
 RUN SvtAv1EncApp --help
-
-# Install ssimulacra2
-RUN git clone https://github.com/rust-av/ssimulacra2_bin.git /ssimulacra2_bin
-WORKDIR /ssimulacra2_bin
-RUN cargo build --release && \
-    cp target/release/ssimulacra2_rs /usr/local/bin
 
 WORKDIR /app
 COPY . /app
