@@ -18,7 +18,7 @@ get_remote_commit() {
 get_docker_commit() {
     local COMMIT
 
-    COMMIT=$(${CONTAINER_SYSTEM} run --rm bd_calculations cat "/${1}")
+    COMMIT=$(${CONTAINER_SYSTEM} run --rm -it bd_calculations cat "/${1}")
     echo "$COMMIT"
 }
 
@@ -89,7 +89,7 @@ while :; do
 done
 
 
-# Update container image
+# Check for new encoder commits and update container image if necessary
 update_container_image
 
 ENCODERS=("x265" "aomenc" "rav1e" "svt-av1")
@@ -101,7 +101,7 @@ for ENCODER in "${ENCODERS[@]}"; do
     printf "Running %s\n" "$ENCODER"
     for VIDEO in "${VIDEOS[@]}"; do
         printf "%s\n" "$VIDEO"
-        ${CONTAINER_SYSTEM} run --rm -v "${OUTPUT}:/videos:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
+        ${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/videos:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
     done
 done
 
@@ -117,7 +117,7 @@ for ENCODER in "${ENCODERS[@]}"; do
 done
 
 echo "Upload results"
-eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${RESULT_CSV}" --type "results"
+${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/${OUTPUT}:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/upload_metrics.py --input "${RESULT_CSV}" --type "results"
 
 echo "Generating All BD Features"
 OUTDIR=$(dirname "${RESULT_CSV}")
@@ -125,12 +125,12 @@ for ENCODER in "${ENCODERS[@]}"; do
     LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
     PRESETS=$(find "${OUTPUT}/${ENCODER}/${LASTHASH}/" -mindepth 2 -maxdepth 2 -type d -printf "%f\n" | sort -n)
     for PRESET in ${PRESETS}; do
-        eval "${SCRIPT_DIR}/scripts/bd_features.py" --input "${RESULT_CSV}" --output "${OUTDIR}/${ENCODER}_${PRESET}_bd_rates.csv" --encoder "${ENCODER}" --commit "${LASTHASH}" --preset "${PRESET}"
+        ${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/${OUTPUT}:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/bd_features.py --input "${RESULT_CSV}" --output "${OUTDIR}/${ENCODER}_${PRESET}_bd_rates.csv" --encoder "${ENCODER}" --commit "${LASTHASH}" --preset "${PRESET}"
     done
 done
 
 
 echo "Uploading all BD Features"
 for FILE in "${OUTDIR}"/*_bd_rates.csv; do
-    eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${FILE}" --type "calculations"
+    ${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/${OUTPUT}:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/upload_metrics.py --input "${FILE}" --type "calculations"
 done
