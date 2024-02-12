@@ -181,7 +181,7 @@ else
 fi
 
 mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
-BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | SvtAv1EncApp --progress 0 -i stdin --lp ${THREADS} --preset ${PRESET} ${QUALITY_SETTINGS} ${FLAG}"
+BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | SvtAv1EncApp --progress 0 -i stdin --lp ${THREADS} --preset ${PRESET} --tile-columns 2 --tile-rows 1 ${QUALITY_SETTINGS} ${FLAG}"
 
 if [ "$VBR" -ne -1 ] || [ "$PASS" -eq 1 ]; then
     FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 1 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -b /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
