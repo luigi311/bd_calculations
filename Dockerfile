@@ -43,9 +43,10 @@ RUN git clone https://aur.archlinux.org/yay.git \
 # is installing the base encoders instead of the git verison.
 # aom-git also installs aom which causes a package conflict requiring it to be ran twice.
 # Generate hash commits prior to clearing out the cache from yay
-RUN yay -Sy --batchinstall --noconfirm x265-git rav1e-git svt-av1-git && \
+RUN yay -Sy --batchinstall --noconfirm x264-git x265-git rav1e-git svt-av1-git && \
     yay -Sy --batchinstall --noconfirm aom-git || yes | yay -Sy --batchinstall aom-git && \
     yay -Sy --batchinstall --noconfirm ffmpeg-git && \
+    cd ~/.cache/yay/x264-git/x264 && git log --pretty=tformat:'%H' -n1 . > ~/x264 && \
     cd ~/.cache/yay/x265-git/x265_git && git log --pretty=tformat:'%H' -n1 . > ~/x265 && \
     cd ~/.cache/yay/rav1e-git/rav1e && git log --pretty=tformat:'%H' -n1 . > ~/rav1e && \
     cd ~/.cache/yay/svt-av1-git/SVT-AV1 && git log --pretty=tformat:'%H' -n1 . > ~/svt-av1 && \
@@ -55,7 +56,7 @@ RUN yay -Sy --batchinstall --noconfirm x265-git rav1e-git svt-av1-git && \
 USER root
 
 # Move hash commits to root
-RUN mv /home/makepkg/x265 /home/makepkg/rav1e /home/makepkg/svt-av1 /home/makepkg/aomenc / 
+RUN mv /home/makepkg/x264 /home/makepkg/x265 /home/makepkg/rav1e /home/makepkg/svt-av1 /home/makepkg/aomenc / 
 
 RUN pacman -Sy  --noconfirm \
         vapoursynth \

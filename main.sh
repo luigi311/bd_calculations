@@ -25,21 +25,25 @@ get_docker_commit() {
 update_container_image() {
 
     # Check latest commit for encoders
+    COMMIT_X264=$(get_remote_commit "https://code.videolan.org/videolan/x264.git")
     COMMIT_X265=$(get_remote_commit "https://github.com/videolan/x265.git")
     COMMIT_AOMENC=$(get_remote_commit "https://aomedia.googlesource.com/aom")
     COMMIT_RAV1E=$(get_remote_commit "https://github.com/xiph/rav1e.git")
     COMMIT_SVT_AV1=$(get_remote_commit "https://gitlab.com/AOMediaCodec/SVT-AV1.git")
 
+    # Check latest commit for encoders in container
+    DOCKER_X264=$(get_docker_commit "x264")
     DOCKER_X265=$(get_docker_commit "x265")
     DOCKER_AOMENC=$(get_docker_commit "aomenc")
     DOCKER_RAV1E=$(get_docker_commit "rav1e")
     DOCKER_SVT_AV1=$(get_docker_commit "svt-av1")
 
     # Check if any of the commits are different
-    if [ "$COMMIT_X265" != "$DOCKER_X265" ] || [ "$COMMIT_AOMENC" != "$DOCKER_AOMENC" ] || [ "$COMMIT_RAV1E" != "$DOCKER_RAV1E" ] || [ "$COMMIT_SVT_AV1" != "$DOCKER_SVT_AV1" ]; then
+    if [ "$COMMIT_X264" != "$DOCKER_X264" ] || [ "$COMMIT_X265" != "$DOCKER_X265" ] || [ "$COMMIT_AOMENC" != "$DOCKER_AOMENC" ] || [ "$COMMIT_RAV1E" != "$DOCKER_RAV1E" ] || [ "$COMMIT_SVT_AV1" != "$DOCKER_SVT_AV1" ]; then
         echo "Updating container image..."
 
         if [ -n "$(${CONTAINER_SYSTEM} images -q bd_calculations:latest 2> /dev/null)" ]; then
+            echo "x264: $DOCKER_X264 -> $COMMIT_X264"
             echo "x265: $DOCKER_X265 -> $COMMIT_X265"
             echo "aomenc: $DOCKER_AOMENC -> $COMMIT_AOMENC"
             echo "rav1e: $DOCKER_RAV1E -> $COMMIT_RAV1E"
@@ -92,7 +96,7 @@ done
 # Check for new encoder commits and update container image if necessary
 update_container_image
 
-ENCODERS=("x265" "aomenc" "rav1e" "svt-av1")
+ENCODERS=("x265" "aomenc" "rav1e" "svt-av1" "x264")
 VIDEOS=("Big Buck Bunny 720p.mkv")
 THREADS=$(nproc --all)
 ENC_WORKERS=1

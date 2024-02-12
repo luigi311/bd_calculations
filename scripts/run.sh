@@ -76,7 +76,7 @@ CBR=-1
 SAMPLES=-1
 SAMPLETIME=60
 ENCODER="aomenc"
-SUPPORTED_ENCODERS="aomenc:svt-av1:x265:rav1e"
+SUPPORTED_ENCODERS="aomenc:svt-av1:x265:x264:rav1e"
 
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 while :; do
@@ -257,6 +257,8 @@ if [ "$THREADS" -eq -1 ]; then
     elif [ "$ENCODER" == "svt-av1" ]; then
         THREADS=18
     elif [ "$ENCODER" == "x265" ]; then
+        THREADS=4
+    elif [ "$ENCODER" == "x264" ]; then
         THREADS=4
     elif [ "$ENCODER" == "rav1e" ]; then
         THREADS=4
