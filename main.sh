@@ -10,14 +10,14 @@ OUTPUT="${HOME}/Videos"
 
 get_remote_commit() {
     local COMMIT
-    
+
     COMMIT=$(git ls-remote "$1" HEAD | cut -f1)
     echo "$COMMIT"
 }
 
 get_docker_commit() {
     local COMMIT
-    
+
     COMMIT=$(${CONTAINER_SYSTEM} run --rm bd_calculations cat "/${1}")
     echo "$COMMIT"
 }
@@ -93,7 +93,7 @@ done
 update_container_image
 
 ENCODERS=("x265" "aomenc" "rav1e" "svt-av1")
-VIDEOS=("Big Buck Bunny.mkv")
+VIDEOS=("Big Buck Bunny 720p.mkv")
 THREADS=$(nproc --all)
 ENC_WORKERS=1
 
