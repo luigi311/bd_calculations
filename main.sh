@@ -6,7 +6,7 @@ set -e
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 CONTAINER_SYSTEM="podman"
-SOURCE="${HOME}/Videos"
+OUTPUT="${HOME}/Videos"
 
 get_remote_commit() {
     local COMMIT
@@ -67,9 +67,9 @@ while :; do
                 die "ERROR: $1 requires a non-empty option argument."
             fi
             ;;
-        -s | --source)
+        -o | --output)
             if [ "$2" ]; then
-                SOURCE="$2"
+                OUTPUT="$2"
                 shift
             else
                 die "ERROR: $1 requires a non-empty option argument."
@@ -101,19 +101,19 @@ for ENCODER in "${ENCODERS[@]}"; do
     printf "Running %s\n" "$ENCODER"
     for VIDEO in "${VIDEOS[@]}"; do
         printf "%s\n" "$VIDEO"
-        ${CONTAINER_SYSTEM} run --rm -v "${SOURCE}:/videos:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
+        ${CONTAINER_SYSTEM} run --rm -v "${OUTPUT}:/videos:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
     done
 done
 
 
-mkdir -p "${SOURCE}/bd_calculations"
-RESULT_CSV="${SOURCE}/bd_calculations/results.csv"
+mkdir -p "${OUTPUT}/bd_calculations"
+RESULT_CSV="${OUTPUT}/bd_calculations/results.csv"
 
 echo "Encoder, Commit, Preset, Video, Size, Quality, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF" > "${RESULT_CSV}"
 
 for ENCODER in "${ENCODERS[@]}"; do
-    LASTHASH=$(find "${SOURCE}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
-    find "${SOURCE}/${ENCODER}/${LASTHASH}/" -name '*.stats' -exec awk '{print $0}' {} + >> "${RESULT_CSV}"
+    LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
+    find "${OUTPUT}/${ENCODER}/${LASTHASH}/" -name '*.stats' -exec awk '{print $0}' {} + >> "${RESULT_CSV}"
 done
 
 echo "Upload results"
@@ -122,8 +122,8 @@ eval "${SCRIPT_DIR}/scripts/upload_metrics.py" --input "${RESULT_CSV}" --type "r
 echo "Generating All BD Features"
 OUTDIR=$(dirname "${RESULT_CSV}")
 for ENCODER in "${ENCODERS[@]}"; do
-    LASTHASH=$(find "${SOURCE}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
-    PRESETS=$(find "${SOURCE}/${ENCODER}/${LASTHASH}/" -mindepth 2 -maxdepth 2 -type d -printf "%f\n" | sort -n)
+    LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
+    PRESETS=$(find "${OUTPUT}/${ENCODER}/${LASTHASH}/" -mindepth 2 -maxdepth 2 -type d -printf "%f\n" | sort -n)
     for PRESET in ${PRESETS}; do
         eval "${SCRIPT_DIR}/scripts/bd_features.py" --input "${RESULT_CSV}" --output "${OUTDIR}/${ENCODER}_${PRESET}_bd_rates.csv" --encoder "${ENCODER}" --commit "${LASTHASH}" --preset "${PRESET}"
     done
