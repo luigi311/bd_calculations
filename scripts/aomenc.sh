@@ -188,14 +188,8 @@ else
     QUALITY_SETTINGS="--end-usage=q --cq-level=${QUALITY}"
 fi
 
-if [ "$PRESET" -gt 5 ]; then
-    RT_GOOD="--rt"
-else
-    RT_GOOD="--good"
-fi
-
 mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
-BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | aomenc --ivf --threads=$THREADS -b 10 --cpu-used=$PRESET $RT_GOOD --tile-columns=2 --tile-rows=1 $QUALITY_SETTINGS $FLAG"
+BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | aomenc --ivf --threads=$THREADS -b 10 --cpu-used=$PRESET --tile-columns=2 --tile-rows=1 $QUALITY_SETTINGS $FLAG"
 
 if [ "$PASS" == 1 ]; then
     FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" - > /dev/null 2>&1" 2>&1 | awk ' /Sec/ { print $2 }')
