@@ -55,25 +55,26 @@ def row_in_data(row, data, encoders, videos, types):
     return False
 
 def add_video_if_not_exist(cur, conn, video, videos):
-    # Add video to videos lookup if not exist
-    if video not in videos:
-        cur.execute(
-            f"INSERT INTO videos_lookup (name) VALUES ('{video}')"
-        )
-        conn.commit()
-        videos = lookup_to_dictionary(get_values(cur, "videos_lookup"))
+    # Add video to videos lookup
+    cur.execute(
+        f"INSERT INTO videos_lookup (name) VALUES ('{video}')"
+    )
+    conn.commit()
+    videos = lookup_to_dictionary(get_values(cur, "videos_lookup"))
     
     return videos
 
 def calculations(cur, conn, reader, encoders, videos, timestamp):
     data = get_values(cur, "calculations")
     for row in reader:
+        # Add video to videos lookup if it does not exist
+        if row[6] not in videos:
+            # Update videos list
+            videos = add_video_if_not_exist(cur, conn, row[6], videos)
+
         # If row is in the database skip
         if row_in_data(row, data, encoders, videos, "calculations"):
             continue
-
-        # Update videos list
-        videos = add_video_if_not_exist(cur, conn, row[6], videos)
 
         # insert row into calculations table
         cur.execute(
@@ -107,12 +108,14 @@ def calculations(cur, conn, reader, encoders, videos, timestamp):
 def results(cur, conn, reader, encoders, videos, timestamp):
     data = get_values(cur, "results")
     for row in reader:
+        # Add video to videos lookup if it does not exist
+        if row[3] not in videos:
+            # Update videos list
+            videos = add_video_if_not_exist(cur, conn, row[3], videos)
+
         # If row is in the database skip
         if row_in_data(row, data, encoders, videos, "results"):
             continue
-
-        # Update videos list
-        videos = add_video_if_not_exist(cur, conn, row[3], videos)
 
         # insert row into calculations table
         cur.execute(
