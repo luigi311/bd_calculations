@@ -6,6 +6,64 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
+# Database results table columns
+res_db_pkey = 0
+res_db_timestamp = 1
+res_db_encoder_fkey = 2
+res_db_commit = 3
+res_db_preset = 4
+res_db_video_fkey = 5
+res_db_size = 6
+res_db_quality = 7
+res_db_bitrate = 8
+res_db_first_encode_time = 9
+res_db_second_encode_time = 10
+res_db_decode_time = 11
+res_db_vmaf = 12
+res_db_ssimulacra2 = 13
+
+# CSV results columns
+res_row_encoder = 0
+res_row_commit = 1
+res_row_preset = 2
+res_row_video = 3
+res_row_size = 4
+res_row_quality = 5
+res_row_bitrate = 6
+res_row_first_encode_time = 7
+res_row_second_encode_time = 8
+res_row_decode_time = 9
+res_row_vmaf = 10
+res_row_ssimulacra2 = 11
+
+# Database calculations table columns
+cal_db_pkey = 0
+cal_db_timestamp = 1
+cal_db_base_encoder_fkey = 2
+cal_db_base_encoder_commit = 3
+cal_db_base_encoder_preset = 4
+cal_db_tar_encoder_fkey = 5
+cal_db_tar_encoder_commit = 6
+cal_db_tar_encoder_preset = 7
+cal_db_video_fkey = 8
+cal_db_encode_time_pct = 9
+cal_db_decode_time_pct = 10
+cal_db_vmaf = 11
+cal_db_ssimulacra2 = 12
+
+# CSV calculations columns
+cal_row_base_encoder = 0
+cal_row_base_commit = 1
+cal_row_base_preset = 2
+cal_row_tar_encoder = 3
+cal_row_tar_commit = 4
+cal_row_tar_preset = 5
+cal_row_video = 6
+cal_row_encode_time = 7
+cal_row_decode_time = 8
+cal_row_vmaf = 9
+cal_row_ssimulacra2 = 10
+
 
 def get_values(cur, table):
     cur.execute(f"SELECT * FROM {table}")
@@ -22,58 +80,57 @@ def lookup_to_dictionary(lookup):
     return {row[1]: row[0] for row in lookup}
 
 
-def row_in_data(row, data, encoders, videos, types):
-    for data_row in data:
-        if types=="calculations":
+def row_in_data(row, database, encoders, videos, types):
+    for database_row in database:
+        if types == "calculations":
             if (
-                data_row[2] == encoders[row[0]] 
-                and data_row[3] == row[1]
-                and int(data_row[4]) == int(row[2])
-                and data_row[5] == encoders[row[3]]
-                and data_row[6] == row[4]
-                and int(data_row[7]) == int(row[5])
-                and data_row[8] == videos[row[6]]
+                database_row[cal_db_base_encoder_fkey] == encoders[row[cal_row_base_encoder]]
+                and database_row[cal_db_base_encoder_commit] == row[cal_row_base_commit]
+                and database_row[cal_db_base_encoder_preset] == row[cal_row_base_preset]
+                and database_row[cal_db_tar_encoder_fkey] == encoders[row[cal_row_tar_encoder]]
+                and database_row[cal_db_tar_encoder_commit] == row[cal_row_tar_commit]
+                and database_row[cal_db_tar_encoder_preset] == row[cal_row_tar_preset]
+                and database_row[cal_db_video_fkey] == videos[row[cal_row_video]]
             ):
                 return True
-        elif types=="results":
-            if(
-                data_row[2] == encoders[row[0]]
-                and data_row[3] == row[1]
-                and int(data_row[4]) == int(row[2])
-                and data_row[5] == videos[row[3]]
-                and float(data_row[6]) == float(row[4])
-                and data_row[7] == row[5]
-                and float(data_row[8]) == float(row[6])
-                and float(data_row[9]) == float(row[7])
-                and float(data_row[10]) == float(row[8])
-                and float(data_row[11]) == float(row[9])
-                and float(data_row[12]) == float(row[10])
+        elif types == "results":
+            if (
+                database_row[res_db_encoder_fkey] == encoders[row[res_row_encoder]]
+                and database_row[res_db_commit] == row[res_row_commit]
+                and database_row[res_db_preset] == row[res_row_preset]
+                and database_row[res_db_video_fkey] == videos[row[res_row_video]]
+                and float(database_row[res_db_size]) == float(row[res_row_size])
+                and database_row[res_db_quality] == row[res_row_quality]
+                and float(database_row[res_db_bitrate]) == float(row[res_row_bitrate])
+                and float(database_row[res_db_first_encode_time]) == float(row[res_row_first_encode_time])
+                and float(database_row[res_db_second_encode_time]) == float(row[res_row_second_encode_time])
+                and float(database_row[res_db_decode_time]) == float(row[res_row_decode_time])
+                and float(database_row[res_db_vmaf]) == float(row[res_row_vmaf])
             ):
                 return True
-
 
     return False
 
+
 def add_video_if_not_exist(cur, conn, video, videos):
     # Add video to videos lookup
-    cur.execute(
-        f"INSERT INTO videos_lookup (name) VALUES ('{video}')"
-    )
+    cur.execute(f"INSERT INTO videos_lookup (name) VALUES ('{video}')")
     conn.commit()
     videos = lookup_to_dictionary(get_values(cur, "videos_lookup"))
-    
+
     return videos
 
+
 def calculations(cur, conn, reader, encoders, videos, timestamp):
-    data = get_values(cur, "calculations")
+    database = get_values(cur, "calculations")
     for row in reader:
         # Add video to videos lookup if it does not exist
         if row[6] not in videos:
             # Update videos list
-            videos = add_video_if_not_exist(cur, conn, row[6], videos)
+            videos = add_video_if_not_exist(cur, conn, row[cal_row_video], videos)
 
         # If row is in the database skip
-        if row_in_data(row, data, encoders, videos, "calculations"):
+        if row_in_data(row, database, encoders, videos, "calculations"):
             continue
 
         # insert row into calculations table
@@ -92,29 +149,30 @@ def calculations(cur, conn, reader, encoders, videos, timestamp):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (
                 timestamp,
-                encoders[row[0]],
-                row[1],
-                row[2],
-                encoders[row[3]],
-                row[4],
-                row[5],
-                videos[row[6]],
-                row[7],
-                row[8],
-                row[9],
+                encoders[row[cal_row_base_encoder]],
+                row[cal_row_base_commit],
+                row[cal_row_base_preset],
+                encoders[row[cal_row_tar_encoder]],
+                row[cal_row_tar_commit],
+                row[cal_row_tar_preset],
+                videos[row[cal_row_video]],
+                row[cal_row_encode_time],
+                row[cal_row_decode_time],
+                row[cal_row_vmaf],
             ),
         )
 
+
 def results(cur, conn, reader, encoders, videos, timestamp):
-    data = get_values(cur, "results")
+    database = get_values(cur, "results")
     for row in reader:
         # Add video to videos lookup if it does not exist
         if row[3] not in videos:
             # Update videos list
-            videos = add_video_if_not_exist(cur, conn, row[3], videos)
+            videos = add_video_if_not_exist(cur, conn, row[res_row_video], videos)
 
         # If row is in the database skip
-        if row_in_data(row, data, encoders, videos, "results"):
+        if row_in_data(row, database, encoders, videos, "results"):
             continue
 
         # insert row into calculations table
@@ -134,17 +192,17 @@ def results(cur, conn, reader, encoders, videos, timestamp):
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (
                 timestamp,
-                encoders[row[0]],
-                row[1],
-                row[2],
-                videos[row[3]],
-                row[4],
-                row[5],
-                row[6],
-                row[7],
-                row[8],
-                row[9],
-                row[10]
+                encoders[row[res_row_encoder]],
+                row[res_row_commit],
+                row[res_row_preset],
+                videos[row[res_row_video]],
+                row[res_row_size],
+                row[res_row_quality],
+                row[res_row_bitrate],
+                row[res_row_first_encode_time],
+                row[res_row_second_encode_time],
+                row[res_row_decode_time],
+                row[res_row_vmaf],
             ),
         )
 
@@ -152,7 +210,13 @@ def results(cur, conn, reader, encoders, videos, timestamp):
 def main():
     parser = argparse.ArgumentParser(description="Upload metrics to the database")
     parser.add_argument("--input", "-i", type=Path, help="Input File")
-    parser.add_argument("--type", "-t", type=str, choices=["calculations", "results"], help="calculations for bd_rate files, results for result csv files")
+    parser.add_argument(
+        "--type",
+        "-t",
+        type=str,
+        choices=["calculations", "results"],
+        help="calculations for bd_rate files, results for result csv files",
+    )
     args = parser.parse_args()
 
     try:
@@ -185,7 +249,7 @@ def main():
     except Exception as err:
         print(f"Unexpected {err=}, {type(err)=}")
         print(traceback.format_exc())
-    
+
 
 if __name__ == "__main__":
     main()

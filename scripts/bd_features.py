@@ -154,14 +154,18 @@ numbers = {
 
 def calculate_metrics(baseline_dataset, dataset, metric_column):
     baseline = [
-        (float(x[numbers["bitrate"]]), float(x[metric_column])) for x in baseline_dataset
+        (float(x[numbers["bitrate"]]), float(x[metric_column]))
+        for x in baseline_dataset
     ]
     target = [(float(x[numbers["bitrate"]]), float(x[metric_column])) for x in dataset]
     return round(bdrate(baseline, target), 3)
 
 
 def baseline_check(row, args):
-    return (row[numbers["encoder"]] == args.encoder) and (row[numbers["commit"]] == args.commit and (row[numbers["preset"]] == args.preset))
+    return (row[numbers["encoder"]] == args.encoder) and (
+        row[numbers["commit"]] == args.commit
+        and (row[numbers["preset"]] == args.preset)
+    )
 
 
 def main():
@@ -210,11 +214,19 @@ def main():
                 for x in baseline_list
             ]
         )
-        decode_baseline_time = avg([float(x[numbers["decode_time"]]) for x in baseline_list])
+        decode_baseline_time = avg(
+            [float(x[numbers["decode_time"]]) for x in baseline_list]
+        )
 
         for commit in commits:
             # Get the data for this commit not including if the commit and preset are the same as the baseline
-            dataset = [ x for x in data if x[numbers["commit"]] == commit and x[numbers["video"]] == video and not baseline_check(x, args) ]
+            dataset = [
+                x
+                for x in data
+                if x[numbers["commit"]] == commit
+                and x[numbers["video"]] == video
+                and not baseline_check(x, args)
+            ]
 
             dataset_by_preset = []
 
@@ -235,7 +247,10 @@ def main():
                 if encode_baseline_time != 0:
                     encode_flag_time = avg(
                         [
-                            (float(x[numbers["first_time"]]) + float(x[numbers["second_time"]]))
+                            (
+                                float(x[numbers["first_time"]])
+                                + float(x[numbers["second_time"]])
+                            )
                             for x in preset_dataset
                         ]
                     )
