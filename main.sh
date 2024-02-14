@@ -102,8 +102,8 @@ THREADS=$(nproc --all)
 ENC_WORKERS=1
 
 for ENCODER in "${ENCODERS[@]}"; do
-    printf "Running %s\n" "$ENCODER"
     for VIDEO in "${VIDEOS[@]}"; do
+        printf "Running %s\n" "$ENCODER"
         printf "%s\n" "$VIDEO"
         ${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/videos:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --vbr --resume
     done
