@@ -84,21 +84,31 @@ def row_in_data(row, cur, encoders_lookup, videos_lookup, types):
     return False
 
 
-def add_video_if_not_exist(cur, conn, video, videos_lookup):
+def add_to_lookup(cur, conn, record, lookup):
     # Add video to videos lookup
-    cur.execute(f"INSERT INTO videos_lookup (name) VALUES ('{video}')")
+    cur.execute(f"INSERT INTO {lookup} (name) VALUES ('{record}')")
     conn.commit()
-    videos_lookup = lookup_to_dictionary(get_values_from_table(cur, "videos_lookup"))
+    lookup_values = lookup_to_dictionary(get_values_from_table(cur, lookup))
 
-    return videos_lookup
+    return lookup_values
 
 
 def calculations(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp):
     for row in csv_data:
+        # Add baseline encoder to encoders lookup if it does not exist
+        if row[cal_base_encoder] not in encoders_lookup:
+            # Update encoders list
+            encoders_lookup = add_to_lookup(cur, conn, row[cal_base_encoder], "encoders_lookup")
+        
+        # Add target encoder to encoders lookup if it does not exist
+        if row[cal_tar_encoder] not in encoders_lookup:
+            # Update encoders list
+            encoders_lookup = add_to_lookup(cur, conn, row[cal_tar_encoder], "encoders_lookup")
+
         # Add video to videos lookup if it does not exist
         if row[cal_video] not in videos_lookup:
             # Update videos list
-            videos_lookup = add_video_if_not_exist(cur, conn, row[cal_video], videos_lookup)
+            videos_lookup = add_to_lookup(cur, conn, row[cal_video], "videos_lookup")
 
         # If row is in the database skip
         if row_in_data(row, cur, encoders_lookup, videos_lookup, "calculations"):
@@ -139,10 +149,15 @@ def calculations(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp)
 
 def results(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp):
     for row in csv_data:
+        # Add encoder to encoders lookup if it does not exist
+        if row[res_encoder] not in encoders_lookup:
+            # Update encoders list
+            encoders_lookup = add_to_lookup(cur, conn, row[res_encoder], "encoders_lookup")
+        
         # Add video to videos lookup if it does not exist
         if row[res_video] not in videos_lookup:
             # Update videos list
-            videos_lookup = add_video_if_not_exist(cur, conn, row[res_video], videos_lookup)
+            videos_lookup = add_to_lookup(cur, conn, row[res_video], "videos_lookup")
 
         # If row is in the database skip
         if row_in_data(row, cur, encoders_lookup, videos_lookup, "results"):
