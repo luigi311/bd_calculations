@@ -43,60 +43,65 @@ def statment_fetchall(cur, statement):
     return cur.fetchall()
 
 
+def statment_fetchone(cur, statement):
+    cur.execute(f"{statement}")
+    return cur.fetchone()
+
+
 def lookup_to_dictionary(lookup):
     return {row[1]: row[0] for row in lookup}
 
 
-def row_in_data(row, cur, encoders, videos, types):
+def row_in_data(row, cur, encoders_lookup, videos_lookup, types):
     if types == "calculations":
         statement = f"""
             SELECT * FROM calculations
             WHERE
-                baseline_encoder_fkey = {encoders[row[cal_base_encoder]]}
+                baseline_encoder_fkey = {encoders_lookup[row[cal_base_encoder]]}
                 AND baseline_encoder_commit = '{row[cal_base_commit]}'
                 AND baseline_encoder_preset = '{row[cal_base_preset]}'
-                AND target_encoder_fkey = {encoders[row[cal_tar_encoder]]}
+                AND target_encoder_fkey = {encoders_lookup[row[cal_tar_encoder]]}
                 AND target_encoder_commit = '{row[cal_tar_commit]}'
                 AND target_encoder_preset = '{row[cal_tar_preset]}'
-                AND video_fkey = {videos[row[cal_video]]}
+                AND video_fkey = {videos_lookup[row[cal_video]]}
         """
 
-        if statment_fetchall(cur, statement):
+        if statment_fetchone(cur, statement):
             return True
     elif types == "results":
         statement = f"""
             SELECT * FROM results
             WHERE
-                encoder_fkey = {encoders[row[res_encoder]]}
+                encoder_fkey = {encoders_lookup[row[res_encoder]]}
                 AND commit = '{row[res_commit]}'
                 AND preset = '{row[res_preset]}'
-                AND video_fkey = {videos[row[res_video]]}
+                AND video_fkey = {videos_lookup[row[res_video]]}
                 AND quality = '{row[res_quality]}'
         """
-        if statment_fetchall(cur, statement):
+        if statment_fetchone(cur, statement):
             return True
 
     return False
 
 
-def add_video_if_not_exist(cur, conn, video, videos):
+def add_video_if_not_exist(cur, conn, video, videos_lookup):
     # Add video to videos lookup
     cur.execute(f"INSERT INTO videos_lookup (name) VALUES ('{video}')")
     conn.commit()
-    videos = lookup_to_dictionary(get_values_from_table(cur, "videos_lookup"))
+    videos_lookup = lookup_to_dictionary(get_values_from_table(cur, "videos_lookup"))
 
-    return videos
+    return videos_lookup
 
 
-def calculations(cur, conn, reader, encoders, videos, timestamp):
-    for row in reader:
+def calculations(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp):
+    for row in csv_data:
         # Add video to videos lookup if it does not exist
-        if row[cal_video] not in videos:
+        if row[cal_video] not in videos_lookup:
             # Update videos list
-            videos = add_video_if_not_exist(cur, conn, row[cal_video], videos)
+            videos_lookup = add_video_if_not_exist(cur, conn, row[cal_video], videos_lookup)
 
         # If row is in the database skip
-        if row_in_data(row, cur, encoders, videos, "calculations"):
+        if row_in_data(row, cur, encoders_lookup, videos_lookup, "calculations"):
             continue
 
         # insert row into calculations table
@@ -116,13 +121,13 @@ def calculations(cur, conn, reader, encoders, videos, timestamp):
                 , vmaf
             ) VALUES (
                 '{timestamp}'
-                , {encoders[row[cal_base_encoder]]}
+                , {encoders_lookup[row[cal_base_encoder]]}
                 , '{row[cal_base_commit]}'
                 , '{row[cal_base_preset]}'
-                , {encoders[row[cal_tar_encoder]]}
+                , {encoders_lookup[row[cal_tar_encoder]]}
                 , '{row[cal_tar_commit]}'
                 , '{row[cal_tar_preset]}'
-                , {videos[row[cal_video]]}
+                , {videos_lookup[row[cal_video]]}
                 , '{row[cal_encode_time]}'
                 , '{row[cal_decode_time]}'
                 , '{row[cal_vmaf]}'
@@ -132,15 +137,15 @@ def calculations(cur, conn, reader, encoders, videos, timestamp):
     conn.commit()
 
 
-def results(cur, conn, reader, encoders, videos, timestamp):
-    for row in reader:
+def results(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp):
+    for row in csv_data:
         # Add video to videos lookup if it does not exist
-        if row[res_video] not in videos:
+        if row[res_video] not in videos_lookup:
             # Update videos list
-            videos = add_video_if_not_exist(cur, conn, row[res_video], videos)
+            videos_lookup = add_video_if_not_exist(cur, conn, row[res_video], videos_lookup)
 
         # If row is in the database skip
-        if row_in_data(row, cur, encoders, videos, "results"):
+        if row_in_data(row, cur, encoders_lookup, videos_lookup, "results"):
             continue
 
         # insert row into calculations table
@@ -161,10 +166,10 @@ def results(cur, conn, reader, encoders, videos, timestamp):
                 , vmaf
             ) VALUES (
                 '{timestamp}'
-                , {encoders[row[res_encoder]]}
+                , {encoders_lookup[row[res_encoder]]}
                 , '{row[res_commit]}'
                 , '{row[res_preset]}'
-                , {videos[row[res_video]]}
+                , {videos_lookup[row[res_video]]}
                 , '{row[res_size]}'
                 , '{row[res_quality]}'
                 , '{row[res_bitrate]}'
@@ -197,8 +202,8 @@ def main():
 
             with conn.cursor() as cur:
 
-                encoders = lookup_to_dictionary(get_values_from_table(cur, "encoders_lookup"))
-                videos = lookup_to_dictionary(get_values_from_table(cur, "videos_lookup"))
+                encoders_lookup = lookup_to_dictionary(get_values_from_table(cur, "encoders_lookup"))
+                videos_lookup = lookup_to_dictionary(get_values_from_table(cur, "videos_lookup"))
 
                 # Convert epoch time to postgres timestamp with mst timezone
                 timestamp_statement = f"to_timestamp({os.path.getmtime(args.input)})"
@@ -211,10 +216,12 @@ def main():
                     # Skip headers
                     next(reader)
 
+                    csv_data = [row for row in reader]
+
                     if args.type == "calculations":
-                        calculations(cur, conn, reader, encoders, videos, timestamp)
+                        calculations(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp)
                     elif args.type == "results":
-                        results(cur, conn, reader, encoders, videos, timestamp)
+                        results(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp)
                     else:
                         raise Exception("Invalid type argument")
     except Exception as err:

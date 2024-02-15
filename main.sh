@@ -120,7 +120,7 @@ for ENCODER in "${ENCODERS[@]}"; do
     find "${OUTPUT}/${ENCODER}/${LASTHASH}/" -name '*.stats' -exec awk '{print $0}' {} + >> "${RESULT_CSV}"
 done
 
-echo "Upload results"
+echo "Uploading results"
 ${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/${OUTPUT}:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/upload_metrics.py --input "${RESULT_CSV}" --type "results"
 
 echo "Generating All BD Features"
@@ -133,8 +133,14 @@ for ENCODER in "${ENCODERS[@]}"; do
     done
 done
 
-
-echo "Uploading all BD Features"
+echo "Combining all BD Features"
+# Combine all BD features into one file
+# Get header from first file
+FIRST=$(find "${OUTDIR}" -name "*_bd_rates.csv" -print -quit)
+head -n1 "${FIRST}" > "${OUTDIR}/all_bd_rates.csv"
 for FILE in "${OUTDIR}"/*_bd_rates.csv; do
-    ${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/${OUTPUT}:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/upload_metrics.py --input "${FILE}" --type "calculations"
+    tail -n+2 "${FILE}" >> "${OUTDIR}/all_bd_rates.csv"
 done
+
+echo "Uploading BD Features"
+${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/${OUTPUT}:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/upload_metrics.py --input "${OUTDIR}/all_bd_rates.csv" --type "calculations"
