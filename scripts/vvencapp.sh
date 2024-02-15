@@ -189,11 +189,6 @@ else
     SECOND_TIME=0
 fi
 
-#ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.h266" -c copy "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.mp4" 2>&1)
-#if [ -n "$ERROR" ]; then
-#    die "$FLAG failed ${ERROR} ${ERROR2}"
-#fi
-
 if [ "$DECODE" -ne -1 ]; then
     DECODE_TIME=$(env time --format="Sec %e" bash -c " vvc_decoder -b \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h266\" -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.yuv\"" 2>&1 > /dev/null | awk ' /Sec/ { print $2 }')
 else
@@ -218,6 +213,4 @@ rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.info" &&
 rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mp4" &&
 rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log.cutree" 
 
-#SIZE=$(du -k "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h266" | awk '{print $1}') &&
-#BITRATE=$(ffprobe -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mp4" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
 echo -n "vvencapp,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"

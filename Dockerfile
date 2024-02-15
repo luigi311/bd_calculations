@@ -47,7 +47,7 @@ RUN yay -Sy --batchinstall --noconfirm x264-git x265-git rav1e-git svt-av1-git &
     yay -Sy --batchinstall --noconfirm aom-git || yes | yay -Sy --batchinstall aom-git && \
     yay -Sy --batchinstall --noconfirm ffmpeg-git && \
     yay -Sy --batchinstall --noconfirm ssimulacra2_bin-git && \
-    yay -Sy --batchinstall --noconfirm vvenc-git uvg266-git && \
+    yay -Sy --batchinstall --noconfirm vvenc-git vvc-vtm  && \
     cd ~/.cache/yay/x264-git/x264 && git log --pretty=tformat:'%H' -n1 . > ~/x264 && \
     cd ~/.cache/yay/x265-git/x265_git && git log --pretty=tformat:'%H' -n1 . > ~/x265 && \
     cd ~/.cache/yay/rav1e-git/rav1e && git log --pretty=tformat:'%H' -n1 . > ~/rav1e && \
