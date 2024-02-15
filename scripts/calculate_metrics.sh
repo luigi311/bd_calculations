@@ -59,6 +59,7 @@ if [ "$N_THREADS" -eq -1 ]; then
 fi
 
 FILE=${DISTORTED%.mkv}
+FILE=${FILE%.y4m}
 VMAF_OUT=""
 
 LOG=$(ffmpeg -hide_banner -loglevel error -r 24 -i "$DISTORTED" -r 24 -i "$REFERENCE" -filter_complex "libvmaf=log_path=${FILE}.json:log_fmt=json:n_threads=${N_THREADS}" -f null - 2>&1)

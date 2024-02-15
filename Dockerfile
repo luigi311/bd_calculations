@@ -46,20 +46,28 @@ RUN git clone https://aur.archlinux.org/yay.git \
 RUN yay -Sy --batchinstall --noconfirm x264-git x265-git rav1e-git svt-av1-git && \
     yay -Sy --batchinstall --noconfirm aom-git || yes | yay -Sy --batchinstall aom-git && \
     yay -Sy --batchinstall --noconfirm ffmpeg-git && \
+    yay -Sy --batchinstall --noconfirm ssimulacra2_bin-git && \
+    yay -Sy --batchinstall --noconfirm vvenc-git uvg266-git && \
     cd ~/.cache/yay/x264-git/x264 && git log --pretty=tformat:'%H' -n1 . > ~/x264 && \
     cd ~/.cache/yay/x265-git/x265_git && git log --pretty=tformat:'%H' -n1 . > ~/x265 && \
     cd ~/.cache/yay/rav1e-git/rav1e && git log --pretty=tformat:'%H' -n1 . > ~/rav1e && \
     cd ~/.cache/yay/svt-av1-git/SVT-AV1 && git log --pretty=tformat:'%H' -n1 . > ~/svt-av1 && \
     cd ~/.cache/yay/aom-git/aom/ && git log --pretty=tformat:'%H' -n1 . > ~/aomenc && \
-    yes | yay -Scc
-
-RUN yay -Sy --batchinstall --noconfirm ssimulacra2_bin-git && \
+    cd ~/.cache/yay/vvenc-git/vvenc && git log --pretty=tformat:'%H' -n1 . > ~/vvencapp && \
+    cd ~/.cache/yay/uvg266-git/uvg266 && git log --pretty=tformat:'%H' -n1 . > ~/uvg266 && \
     yes | yay -Scc
 
 USER root
 
 # Move hash commits to root
-RUN mv /home/makepkg/x264 /home/makepkg/x265 /home/makepkg/rav1e /home/makepkg/svt-av1 /home/makepkg/aomenc / 
+RUN mv "/home/${BUILD_USER}/x264" \
+    "/home/${BUILD_USER}/x265" \
+    "/home/${BUILD_USER}/rav1e" \
+    "/home/${BUILD_USER}/svt-av1" \
+    "/home/${BUILD_USER}/aomenc" \
+    "/home/${BUILD_USER}/vvencapp" \
+    "/home/${BUILD_USER}/uvg266" \
+    /
 
 RUN pacman -Sy  --noconfirm \
         vapoursynth \
@@ -76,6 +84,12 @@ RUN  rav1e --help
 
 # Test svt-av1
 RUN SvtAv1EncApp --help
+
+# Test vvenc
+RUN vvencapp --help
+
+# Test uvg266
+RUN uvg266 --help
 
 WORKDIR /app
 COPY . /app

@@ -76,7 +76,7 @@ CBR=-1
 SAMPLES=-1
 SAMPLETIME=60
 ENCODER="aomenc"
-SUPPORTED_ENCODERS="aomenc:svt-av1:x265:x264:rav1e"
+SUPPORTED_ENCODERS="aomenc:svt-av1:x265:x264:rav1e:vvencapp"
 
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 while :; do
@@ -252,18 +252,10 @@ while :; do
 done
 
 if [ "$THREADS" -eq -1 ]; then
-    if [ "$ENCODER" == "aomenc" ]; then
-        THREADS=4
-    elif [ "$ENCODER" == "svt-av1" ]; then
+    if [ "$ENCODER" == "svt-av1" ]; then
         THREADS=18
-    elif [ "$ENCODER" == "x265" ]; then
-        THREADS=4
-    elif [ "$ENCODER" == "x264" ]; then
-        THREADS=4
-    elif [ "$ENCODER" == "rav1e" ]; then
-        THREADS=4
     else
-        die "Threads not set"
+        THREADS=8
     fi
 fi
 
@@ -296,11 +288,7 @@ elif [ "$CQ" -ne -1 ]; then
         die "cq is not supported by $ENCODER"
     fi
 elif [ "$VBR" -ne -1 ]; then
-    if [ "$ENCODER" == "aomenc" ] || [ "$ENCODER" == "svt-av1" ] || [ "$ENCODER" == "x265" ] || [ "$ENCODER" == "x264" ] || [ "$ENCODER" == "rav1e" ]; then
-        ENCODING="--vbr"
-    else
-        die "vbr is not supported by $ENCODER"
-    fi
+    ENCODING="--vbr"
 elif [ "$CRF" -ne -1 ]; then
     if [ "$ENCODER" == "x265" ] || [ "$ENCODER" == "x264" ]; then
         ENCODING="--crf"
@@ -321,6 +309,8 @@ else
         ENCODING="--crf"
     elif [ "$ENCODER" == "svt-av1" ]; then
         ENCODING="--cq"
+    else
+        ENCODING="--vbr"
     fi
 fi
 
@@ -388,7 +378,12 @@ parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $R
 
 
 echo "Calculating Metrics"
-find "$OUTPUTFINAL" -name "*.mkv" | parallel -j "$METRIC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference \""$INPUT"\" --nthreads "$N_THREADS"
+if [ "$ENCODER" == "vvencapp" ]; then
+    METRIC_EXTENSION="y4m"
+else
+    METRIC_EXTENSION="mkv"
+fi
+find "$OUTPUTFINAL" -name "*.${METRIC_EXTENSION}" | parallel -j "$METRIC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference \""$INPUT"\" --nthreads "$N_THREADS"
 
 echo "Creating CSV"
 find "$OUTPUTFINAL" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' FOLDER
