@@ -179,7 +179,7 @@ else
 fi
 
 mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
-BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | vvencapp -i - --y4m -c yuv420_10 --threads ${THREADS} --tiles 2x1 --preset ${PRESET} ${QUALITY_SETTINGS}"
+BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | vvencapp -i - --y4m -c yuv420_10 --threads ${THREADS} --preset ${PRESET} ${QUALITY_SETTINGS}"
 
 if [ "$VBR" -ne -1 ] || [ "$PASS" -eq 1 ]; then
     FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --passes 2 --pass 1 --rcstatsfile \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.json\" -o /dev/null" 2>&1 > /dev/null | awk ' /Sec/ { print $2 }')
