@@ -54,7 +54,6 @@ RUN yay -Sy --batchinstall --noconfirm x264-git x265-git rav1e-git svt-av1-git &
     cd ~/.cache/yay/svt-av1-git/SVT-AV1 && git log --pretty=tformat:'%H' -n1 . > ~/svt-av1 && \
     cd ~/.cache/yay/aom-git/aom/ && git log --pretty=tformat:'%H' -n1 . > ~/aomenc && \
     cd ~/.cache/yay/vvenc-git/vvenc && git log --pretty=tformat:'%H' -n1 . > ~/vvencapp && \
-    cd ~/.cache/yay/uvg266-git/uvg266 && git log --pretty=tformat:'%H' -n1 . > ~/uvg266 && \
     yes | yay -Scc
 
 USER root
@@ -66,7 +65,6 @@ RUN mv "/home/${BUILD_USER}/x264" \
     "/home/${BUILD_USER}/svt-av1" \
     "/home/${BUILD_USER}/aomenc" \
     "/home/${BUILD_USER}/vvencapp" \
-    "/home/${BUILD_USER}/uvg266" \
     /
 
 RUN pacman -Sy  --noconfirm \
@@ -87,9 +85,6 @@ RUN SvtAv1EncApp --help
 
 # Test vvenc
 RUN vvencapp --help
-
-# Test uvg266
-RUN uvg266 --help
 
 WORKDIR /app
 COPY . /app
