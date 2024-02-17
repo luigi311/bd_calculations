@@ -50,13 +50,12 @@ update_container_image() {
     then
         echo "Updating container image..."
 
-        if [ -n "$(${CONTAINER_SYSTEM} images -q bd_calculations:latest 2> /dev/null)" ]; then
-            echo "x264: $DOCKER_X264 -> $COMMIT_X264"
-            echo "x265: $DOCKER_X265 -> $COMMIT_X265"
-            echo "aomenc: $DOCKER_AOMENC -> $COMMIT_AOMENC"
-            echo "rav1e: $DOCKER_RAV1E -> $COMMIT_RAV1E"
-            echo "svt-av1: $DOCKER_SVT_AV1 -> $COMMIT_SVT_AV1"
-        fi
+        echo "x264:     $DOCKER_X264 -> $COMMIT_X264"
+        echo "x265:     $DOCKER_X265 -> $COMMIT_X265"
+        echo "aomenc:   $DOCKER_AOMENC -> $COMMIT_AOMENC"
+        echo "rav1e:    $DOCKER_RAV1E -> $COMMIT_RAV1E"
+        echo "svt-av1:  $DOCKER_SVT_AV1 -> $COMMIT_SVT_AV1"
+        echo "vvencapp: $DOCKER_VVENCAP -> $COMMIT_VVENCAP"
 
         ${CONTAINER_SYSTEM} image prune -a -f
         ${CONTAINER_SYSTEM} build -t "bd_calculations" "${SCRIPT_DIR}"
