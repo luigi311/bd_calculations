@@ -18,7 +18,7 @@ get_remote_commit() {
 get_docker_commit() {
     local COMMIT
 
-    COMMIT=$(${CONTAINER_SYSTEM} run --rm -it bd_calculations cat "/${1}")
+    COMMIT=$(${CONTAINER_SYSTEM} run --rm bd_calculations cat "/${1}")
     echo "$COMMIT"
 }
 
