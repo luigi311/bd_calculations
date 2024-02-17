@@ -185,18 +185,11 @@ BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt y
 
 if [ "$VBR" -ne -1 ] || [ "$PASS" -eq 1 ]; then
     FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 1 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -b /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
-    SECOND_TIME=0
-    THIRD_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 2 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -b \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\"" 2>&1 | awk ' /Sec/ { print $2 }')
-
+    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 2 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -b \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\"" 2>&1 | awk ' /Sec/ { print $2 }')
 else
     FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE -b \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" " 2>&1 | awk ' /Sec/ { print $2 }')
     SECOND_TIME=0
-    THIRD_TIME=0
 fi
-
-# Combine FIRST_TIME, SECOND_TIME
-TOTAL_TIME=$(echo "$FIRST_TIME + $SECOND_TIME" | bc -l)
-
 
 ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" -c:v copy "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1)
 if [ -n "$ERROR" ]; then
@@ -216,4 +209,4 @@ rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.json"
 
 SIZE=$(du -k "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" | awk '{print $1}') &&
 BITRATE=$(ffprobe -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
-echo -n "svt-av1,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${TOTAL_TIME},${THIRD_TIME},${DECODE_TIME}" > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"
+echo -n "svt-av1,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"
