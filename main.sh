@@ -26,7 +26,7 @@ update_container_image() {
 
     # Check latest commit for encoders
     COMMIT_X264=$(get_remote_commit "https://code.videolan.org/videolan/x264.git")
-    COMMIT_X265=$(get_remote_commit "https://github.com/videolan/x265.git")
+    COMMIT_X265=$(get_remote_commit "https://bitbucket.org/multicoreware/x265_git")
     COMMIT_AOMENC=$(get_remote_commit "https://aomedia.googlesource.com/aom")
     COMMIT_RAV1E=$(get_remote_commit "https://github.com/xiph/rav1e.git")
     COMMIT_SVT_AV1=$(get_remote_commit "https://gitlab.com/AOMediaCodec/SVT-AV1.git")
