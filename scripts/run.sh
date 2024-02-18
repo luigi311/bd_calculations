@@ -51,10 +51,8 @@ Encoding Settings:
     -t/--threads        [number]    Amount of aomenc threads each encode should use                 (default 4)
     --preset            [number]    Set cpu-used/preset used by encoder                             (default 6)
     --pass              [number]    Set amount of passes for encoder
-    --q                             Use q mode   (applies to aomenc only)                           (default for aomenc)
-    --cq                            Use cq mode  (applies to aomenc only)
-    --vbr                           Use vbr mode (applies to aomenc/x265 only)
-    --crf                           Use crf mode (applies to x265 only)                             (default for x265)
+    --vbr                           Use vbr mode
+    --crf                           Use crf mode                                                    (default)
     --decode                        Test decoding speed
 EOF
 )"
@@ -68,11 +66,8 @@ ENC_WORKERS=-1
 METRIC_WORKERS=-1
 THREADS=-1
 N_THREADS=-1
-Q=-1
-CQ=-1
 VBR=-1
 CRF=-1
-CBR=-1
 SAMPLES=-1
 SAMPLETIME=60
 ENCODER="aomenc"
@@ -156,18 +151,6 @@ while :; do
                 die "ERROR: $1 requires a non-empty option argument."
             fi
             ;;
-        --q)
-            if [ "$VBR" -ne -1 ] || [ "$CQ" -ne -1 ] || [ "$CRF" -ne -1 ] || [ "$CBR" -ne -1 ]; then
-                die "Can not set VBR, CQ, q and CRF at the same time"
-            fi
-            Q=1
-            ;;
-        --cq)
-            if [ "$VBR" -ne -1 ] || [ "$Q" -ne -1 ] || [ "$CRF" -ne -1 ] || [ "$CBR" -ne -1 ]; then
-                die "Can not set VBR, CQ, q and CRF at the same time"
-            fi
-            CQ=1
-            ;;
         --vbr)
             if [ "$Q" -ne -1 ] || [ "$CQ" -ne -1 ] || [ "$CRF" -ne -1 ] || [ "$CBR" -ne -1 ]; then
                 die "Can not set VBR, CQ, q and CRF at the same time"
@@ -179,12 +162,6 @@ while :; do
                 die "Can not set VBR, CQ, q and CRF at the same time"
             fi
             CRF=1
-            ;;
-        --cbr)
-            if [ "$VBR" -ne -1 ] || [ "$Q" -ne -1 ] || [ "$CQ" -ne -1 ] || [ "$CRF" -ne -1 ] ; then
-                die "Can not set VBR, CQ, q and CRF at the same time"
-            fi
-            CBR=1
             ;;
         --bd)
             if [ "$2" ]; then
@@ -251,80 +228,54 @@ while :; do
     shift
 done
 
-if [ "$THREADS" -eq -1 ]; then
-    if [ "$ENCODER" == "svt-av1" ]; then
+if [ "${THREADS}" -eq -1 ]; then
+    if [ "${ENCODER}" == "svt-av1" ]; then
         THREADS=18
     else
         THREADS=8
     fi
+
+    # Cap threads to nproc
+    if [ "${THREADS}" -gt "$(nproc)" ]; then
+        THREADS="$(nproc)"
 fi
 
-if [ "$N_THREADS" -eq -1 ]; then
-    N_THREADS=8
+if [ "${N_THREADS}" -eq -1 ]; then
+    # Set to 8 or nproc
+    N_THREADS=$(( 8 < $(nproc) ? 8 : $(nproc) ))    
 fi
 
 # Set job amounts for encoding
-if [ "$ENC_WORKERS" -eq -1 ]; then
+if [ "${ENC_WORKERS}" -eq -1 ]; then
     ENC_WORKERS=$(( (100 / "$THREADS") + 20 ))
     ENC_WORKERS="${ENC_WORKERS}%"
 fi
 
-if [ "$METRIC_WORKERS" -eq -1 ]; then
+if [ "${METRIC_WORKERS}" -eq -1 ]; then
     METRIC_WORKERS=$(( (100 / "$N_THREADS") + 20 ))
     METRIC_WORKERS="${METRIC_WORKERS}%"
 fi
 
 # Set encoding settings
-if [ "$Q" -ne -1 ]; then
-    if [ "$ENCODER" == "aomenc" ]; then
-        ENCODING="--q"
-    else
-        die "q is not supported by $ENCODER"
-    fi
-elif [ "$CQ" -ne -1 ]; then
-    if [ "$ENCODER" == "aomenc" ] || [ "$ENCODER" == "svt-av1" ]; then
-        ENCODING="--cq"
-    else
-        die "cq is not supported by $ENCODER"
-    fi
-elif [ "$VBR" -ne -1 ]; then
+if [ "${VBR}" -ne -1 ]; then
     ENCODING="--vbr"
-elif [ "$CRF" -ne -1 ]; then
-    if [ "$ENCODER" == "x265" ] || [ "$ENCODER" == "x264" ]; then
-        ENCODING="--crf"
-    else
-        die "crf is not supported by $ENCODER"
-    fi
-elif [ "$CBR" -ne -1 ]; then
-    # TODO: Implement CBR on all encoders
-    if [ "$ENCODER" == "x264" ]; then
-        ENCODING="--cbr"
-    else
-        die "cbr is not supported by $ENCODER"
-    fi
+elif [ "${CRF}" -ne -1 ]; then
+    ENCODING="--crf"
 else
-    if [ "$ENCODER" == "aomenc" ]; then
-        ENCODING="--q"
-    elif [ "$ENCODER" == "x265" ] || [ "$ENCODER" == "x264" ]; then
-        ENCODING="--crf"
-    elif [ "$ENCODER" == "svt-av1" ]; then
-        ENCODING="--cq"
-    else
-        ENCODING="--vbr"
-    fi
+    ENCODING="--crf"
 fi
 
 # Check if files exist
-if [ ! -f "$INPUT" ]; then
-    die "$INPUT file does not exist"
+if [ ! -f "${INPUT}" ]; then
+    die "${INPUT} file does not exist"
 fi
 
-if [ ! -f "$PRESET_FILE" ]; then
-    die "$PRESET_FILE file does not exist"
+if [ ! -f "${PRESET_FILE}" ]; then
+    die "${PRESET_FILE} file does not exist"
 fi
 
-if [ ! -f "$BD_FILE" ]; then
-    die "$BD_FILE file does not exist"
+if [ ! -f "${BD_FILE}" ]; then
+    die "${BD_FILE} file does not exist"
 fi
 
 if [ "$SAMPLES" -ne -1 ]; then
@@ -360,35 +311,35 @@ mkdir -p "${OUTPUT}/${ENCODER}"
 HASH=$(cat "/${ENCODER}")
 LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')
 
-if [ "$LASTHASH" == "$HASH" ]; then
+if [ "${LASTHASH}" == "${HASH}" ]; then
     echo "Hashes match, going back further"
     LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==2{ print $2 }')
 fi
 
-echo "Last hash: $LASTHASH"
-echo "Current hash: $HASH"
+echo "Last hash: ${LASTHASH}"
+echo "Current hash: ${HASH}"
 
-VIDEO=$(basename "$INPUT" | sed 's/\(.*\)\..*/\1/')
+VIDEO=$(basename "${INPUT}" | sed 's/\(.*\)\..*/\1/')
 
 OUTPUTFINAL="${OUTPUT}/${ENCODER}/${HASH}/${VIDEO}"
 mkdir -p "${OUTPUTFINAL}"
 
 echo "Encoding"
-parallel -j "$ENC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "$PRESET_FILE" -a "$BD_FILE" "scripts/${ENCODER}.sh" --input \""$INPUT"\" --output \""${OUTPUTFINAL}/{1}"\" --threads "$THREADS" "$ENCODING" --quality "{2}" --preset "{1}" --flag "baseline" --commit "$HASH" $PASS $DECODE
+parallel -j "${ENC_WORKERS}" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "${PRESET_FILE}" -a "${BD_FILE}" "scripts/${ENCODER}.sh" --input \""${INPUT}"\" --output \""${OUTPUTFINAL}/{1}"\" --threads "${THREADS}" "${ENCODING}" --quality "{2}" --preset "{1}" --flag "baseline" --commit "${HASH}" $PASS $DECODE
 
 
 echo "Calculating Metrics"
-if [ "$ENCODER" == "vvencapp" ]; then
+if [ "${ENCODER}" == "vvencapp" ]; then
     METRIC_EXTENSION="y4m"
 else
     METRIC_EXTENSION="mkv"
 fi
-find "$OUTPUTFINAL" -name "*.${METRIC_EXTENSION}" | parallel -j "$METRIC_WORKERS" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference \""$INPUT"\" --nthreads "$N_THREADS"
+find "${OUTPUTFINAL}" -name "*.${METRIC_EXTENSION}" | parallel -j "${METRIC_WORKERS}" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference \""${INPUT}"\" --nthreads "${N_THREADS}"
 
 echo "Creating CSV"
-find "$OUTPUTFINAL" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' FOLDER
+find "${OUTPUTFINAL}" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' FOLDER
 do
     PRESET=$(basename "${FOLDER}")
-    calculate_bd "$PRESET"
+    calculate_bd "${PRESET}"
 done
 
