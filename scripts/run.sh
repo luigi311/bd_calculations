@@ -337,7 +337,7 @@ else
 fi
 find "${OUTPUTFINAL}" -name "*.${METRIC_EXTENSION}" | parallel -j "${METRIC_WORKERS}" $DISTRIBUTE --joblog "${OUTPUTFINAL}/metrics.log" $RESUME --bar scripts/calculate_metrics.sh --distorted {} --reference \""${INPUT}"\" --nthreads "${N_THREADS}"
 
-echo "Creating CSV"
+echo "Calculating BD Rates"
 find "${OUTPUTFINAL}" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d '' FOLDER
 do
     PRESET=$(basename "${FOLDER}")
