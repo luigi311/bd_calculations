@@ -104,4 +104,4 @@ fi
 printf ",%s" "$VMAF_OUT" >> "$FILE.stats"
 
 # Delete video file to save space
-rm "$DISTORTED"
+#rm "$DISTORTED"
