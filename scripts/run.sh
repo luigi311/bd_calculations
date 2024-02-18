@@ -152,14 +152,14 @@ while :; do
             fi
             ;;
         --vbr)
-            if [ "$Q" -ne -1 ] || [ "$CQ" -ne -1 ] || [ "$CRF" -ne -1 ] || [ "$CBR" -ne -1 ]; then
-                die "Can not set VBR, CQ, q and CRF at the same time"
+            if [ "$CRF" -ne -1 ]; then
+                die "Can not set VBR and CRF at the same time"
             fi
             VBR=1
             ;;
         --crf)
-            if [ "$VBR" -ne -1 ] || [ "$Q" -ne -1 ] || [ "$CQ" -ne -1 ] || [ "$CBR" -ne -1 ]; then
-                die "Can not set VBR, CQ, q and CRF at the same time"
+            if [ "$VBR" -ne -1 ]; then
+                die "Can not set VBR and CRF at the same time"
             fi
             CRF=1
             ;;
