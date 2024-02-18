@@ -8,7 +8,7 @@ die() {
 
 help() {
     help="$(cat <<EOF
-Test x265 flag, will gather stats such as file size, duration of first pass and second pass and put them in a csv.
+Test x265, will gather stats such as file size, duration of first pass and second pass and put them in a csv.
 Usage: 
     ./encoder.sh [options]
 Example:
@@ -30,7 +30,6 @@ EOF
 
 OUTPUT="output"
 INPUT="video.mkv"
-FLAG="baseline"
 THREADS=-1
 PRESET=0
 VBR=-1
@@ -66,14 +65,6 @@ while :; do
         -t | --threads)
             if [ "$2" ]; then
                 THREADS="$2"
-                shift
-            else
-                die "ERROR: $1 requires a non-empty argument."
-            fi
-            ;;
-        -f | --flag)
-            if [ "$2" ]; then
-                FLAG="$2"
                 shift
             else
                 die "ERROR: $1 requires a non-empty argument."
@@ -147,24 +138,8 @@ if [ "$THREADS" -eq -1 ]; then
     THREADS=$(( 4 < $(nproc) ? 4 : $(nproc) ))
 fi
 
-INPUT_NAME=$(basename "$INPUT")
+INPUT_NAME=$(basename "${INPUT}")
 INPUT_NAME="${INPUT_NAME%.*}"
-
-# Remove any potential characters that might cause issues in folder names
-FOLDER1=$(echo "$FLAG" | sed ' s/--//g; s/=//g; s/ //g; s/:/_/g')
-# Get last 120 characters of flags for folder name to prevent length issues
-if [ "${#FOLDER1}" -ge 120 ]; then
-    FOLDER=${FOLDER1: -120}
-else
-    FOLDER="$FOLDER1"
-fi
-
-# Baseline is with no flag, rest requires a : due to x265 parms format
-if [ "$FLAG" == "baseline" ]; then
-    FLAG=""
-else
-    FLAG=":${FLAG}"
-fi
 
 # Set the encoding mode of vbr/crf along with a default
 if [ "$VBR" -ne -1 ]; then
@@ -178,35 +153,36 @@ else
     QUALITY_SETTINGS="--crf ${QUALITY}"
 fi
 
-mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
-BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | x265 --log-level 0 --no-progress --input - --y4m --pools ${THREADS} --preset ${PRESET} ${QUALITY_SETTINGS}"
+mkdir -p "${OUTPUT}/${TYPE}"
+BASE="ffmpeg -y -hide_banner -loglevel error -i \"${INPUT}\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | x265 --log-level 0 --no-progress --input - --y4m --pools ${THREADS} --preset ${PRESET} ${QUALITY_SETTINGS}"
 
-if [ "$VBR" -ne -1 ] || [ "$PASS" -eq 1 ]; then
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 1 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
-    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 2 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h265\"" 2>&1 | awk ' /Sec/ { print $2 }')
-else
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE -o \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h265\" " 2>&1 | awk ' /Sec/ { print $2 }')
+if [ "$PASS" -eq 1 ]; then
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " ${BASE} -o \"${OUTPUT}/${TYPE}/${TYPE}.h265\" " 2>&1 | awk ' /Sec/ { print $2 }')
     SECOND_TIME=0
+else
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " ${BASE} --pass 1 --stats \"${OUTPUT}/${TYPE}/${TYPE}.log\" -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
+    SECOND_TIME=$(env time --format="Sec %e" bash -c " ${BASE} --pass 2 --stats \"${OUTPUT}/${TYPE}/${TYPE}.log\" -o \"${OUTPUT}/${TYPE}/${TYPE}.h265\"" 2>&1 | awk ' /Sec/ { print $2 }')
 fi
 
-ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.h265" -c copy "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.mp4" 2>&1)
-ERROR2=$(ffmpeg -y -hide_banner -loglevel error -i "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.mp4" -c copy "${OUTPUT}/${FOLDER}_${TYPE}/${FOLDER}_${TYPE}.mkv" 2>&1)
+ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "${OUTPUT}/${TYPE}/${TYPE}.h265" -c copy "${OUTPUT}/${TYPE}/${TYPE}.mp4" 2>&1)
+ERROR2=$(ffmpeg -y -hide_banner -loglevel error -i "${OUTPUT}/${TYPE}/${TYPE}.mp4" -c copy "${OUTPUT}/${TYPE}/${TYPE}.mkv" 2>&1)
 if [ -n "$ERROR" ] || [ -n "$ERROR2" ]; then
-    die "$FLAG failed ${ERROR} ${ERROR2}"
+    die "x265 encoding failed for ${TYPE}"
 fi
 
 if [ "$DECODE" -ne -1 ]; then
-    DECODE_TIME=$(env time --format="Sec %e" bash -c " ffmpeg -hide_banner -loglevel error -i \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv\" -f null -" 2>&1 | awk ' /Sec/ { print $2 }')
+    DECODE_TIME=$(env time --format="Sec %e" bash -c " ffmpeg -hide_banner -loglevel error -i \"${OUTPUT}/${TYPE}/${TYPE}.mkv\" -f null -" 2>&1 | awk ' /Sec/ { print $2 }')
 else
     DECODE_TIME=0
 fi
 
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.webm" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.h265" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mp4" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log.cutree" 
+SIZE=$(du -k "${OUTPUT}/${TYPE}/${TYPE}.h265" | awk '{print $1}')
+BITRATE=$(ffprobe -i "${OUTPUT}/${TYPE}/${TYPE}.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
 
-SIZE=$(du -k "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" | awk '{print $1}') &&
-BITRATE=$(ffprobe -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
-echo -n "x265,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"
+rm -f "${OUTPUT}/${TYPE}/${TYPE}.log" &&
+rm -f "${OUTPUT}/${TYPE}/${TYPE}.webm" &&
+rm -f "${OUTPUT}/${TYPE}/${TYPE}.h265" &&
+rm -f "${OUTPUT}/${TYPE}/${TYPE}.mp4" &&
+rm -f "${OUTPUT}/${TYPE}/${TYPE}.log.cutree" 
+
+echo -n "x265,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "${OUTPUT}/${TYPE}/${TYPE}.stats"

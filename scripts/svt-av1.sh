@@ -10,21 +10,20 @@ die() {
 
 help() {
     help="$(cat <<EOF
-Test svt-av1 flag, will gather stats such as file size, duration of first pass and second pass and put them in a csv.
+Test svt-av1, will gather stats such as file size, duration of first pass and second pass and put them in a csv.
 Usage: 
     ./encoder.sh [options]
 Example:
-    ./encoder.sh -i video.mkv -f "--kf-max-dist=360 --enable-keyframe-filtering=0" -t 8 --q --quality 30 
+    ./encoder.sh -i video.mkv -t 8 --q --quality 30 
 Encoding Options:
     -i/--input   [file]     Video source to use                                                 (default video.mkv)
     -o/--output  [folder]   Output folder to place encoded videos and stats files               (default output)
-    -f/--flag    [string]   Flag to test, surround in quotes to prevent issues                  (default baseline)
     -t/--threads [number]   Amount of threads to use                                            (default 4)
     --quality    [number]   Bitrate for vbr, cq-level for q/cq mode, crf                        (default 50)
-    --preset     [number]   Set encoding preset, aomenc higher is faster, x265 lower is faster  (default 6)
-    --pass       [number]   Set amount of passes                                                (default 1)
-    --vbr                   Use vbr mode (applies to aomenc/x265 only)
-    --crf                   Use crf mode (applies to x265 only)                                 (default)
+    --preset     [number]   Set encoding preset, higher is faster                               (default 6)
+    --crf                   Use q mode                                                          (default)
+    --vbr                   Use vbr mode 
+    --decode                Test decoding speed
 EOF
             )"
             echo "$help"
@@ -32,7 +31,6 @@ EOF
 
 OUTPUT="output"
 INPUT="video.mkv"
-FLAG="baseline"
 THREADS=-1
 PRESET=0
 VBR=-1
@@ -68,14 +66,6 @@ while :; do
         -t | --threads)
             if [ "$2" ]; then
                 THREADS="$2"
-                shift
-            else
-                die "ERROR: $1 requires a non-empty argument."
-            fi
-            ;;
-        -f | --flag)
-            if [ "$2" ]; then
-                FLAG="$2"
                 shift
             else
                 die "ERROR: $1 requires a non-empty argument."
@@ -152,22 +142,6 @@ fi
 INPUT_NAME=$(basename "$INPUT")
 INPUT_NAME="${INPUT_NAME%.*}"
 
-# Remove any potential characters that might cause issues in folder names
-FOLDER1=$(echo "$FLAG" | sed ' s/--//g; s/=//g; s/ //g; s/:/_/g')
-# Get last 120 characters of flags for folder name to prevent length issues
-if [ "${#FOLDER1}" -ge 120 ]; then
-    FOLDER=${FOLDER1: -120}
-else
-    FOLDER="$FOLDER1"
-fi
-
-# Baseline is with no flag, rest requires a : due to x265 parms format
-if [ "$FLAG" == "baseline" ]; then
-    FLAG=""
-else
-    FLAG=":${FLAG}"
-fi
-
 # Set the encoding mode of vbr/crf along with a default
 if [ "$VBR" -ne -1 ]; then
     TYPE="vbr${QUALITY}"
@@ -180,33 +154,34 @@ else
     QUALITY_SETTINGS="--rc 0 --crf ${QUALITY}"
 fi
 
-mkdir -p "$OUTPUT/${FOLDER}_${TYPE}"
-BASE="ffmpeg -y -hide_banner -loglevel error -i \"$INPUT\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | SvtAv1EncApp --progress 0 -i stdin --lp ${THREADS} --preset ${PRESET} --tile-columns 2 --tile-rows 1 ${QUALITY_SETTINGS} ${FLAG}"
+mkdir -p "${OUTPUT}/${TYPE}"
+BASE="ffmpeg -y -hide_banner -loglevel error -i \"${INPUT}\" -strict -1 -pix_fmt yuv420p10le -f yuv4mpegpipe - | SvtAv1EncApp --progress 0 -i stdin --lp ${THREADS} --preset ${PRESET} --tile-columns 2 --tile-rows 1 ${QUALITY_SETTINGS}"
 
-if [ "$VBR" -ne -1 ] || [ "$PASS" -eq 1 ]; then
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 1 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -b /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
-    SECOND_TIME=$(env time --format="Sec %e" bash -c " $BASE --pass 2 --stats \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log\" -b \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\"" 2>&1 | awk ' /Sec/ { print $2 }')
-else
-    FIRST_TIME=$(env time --format="Sec %e" bash -c " $BASE -b \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" " 2>&1 | awk ' /Sec/ { print $2 }')
+if [ "$PASS" -eq 1 ]; then
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " ${BASE} --passes 1 -b \"${OUTPUT}/${TYPE}/${TYPE}.ivf\"" 2>&1 | awk ' /Sec/ { print $2 }')
     SECOND_TIME=0
+else
+    FIRST_TIME=$(env time --format="Sec %e" bash -c " ${BASE} --passes 2 --pass 1 --stats \"${OUTPUT}/${TYPE}/${TYPE}.log\" -b /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
+    SECOND_TIME=$(env time --format="Sec %e" bash -c " ${BASE} --passes 2 --pass 2 --stats \"${OUTPUT}/${TYPE}/${TYPE}.log\" -b \"${OUTPUT}/${TYPE}/${TYPE}.ivf\"" 2>&1 | awk ' /Sec/ { print $2 }')
 fi
 
-ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" -c:v copy "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1)
+ERROR=$(ffmpeg -y -hide_banner -loglevel error -i "${OUTPUT}/${TYPE}/${TYPE}.ivf" -c:v copy "${OUTPUT}/${TYPE}/${TYPE}.mkv" 2>&1)
 if [ -n "$ERROR" ]; then
-    rm -rf "$OUTPUT/${FOLDER}_$TYPE"
-    die "$FLAG failed $ERROR"
+    rm -rf "${OUTPUT}/${TYPE}"
+    die "SVT-AV1 failed to encode ${TYPE}"
 fi
 
 if [ "$DECODE" -ne -1 ]; then
-    DECODE_TIME=$(env time --format="Sec %e" bash -c " dav1d -i \"$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf\" -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
+    DECODE_TIME=$(env time --format="Sec %e" bash -c " dav1d -i \"${OUTPUT}/${TYPE}/${TYPE}.ivf\" -o /dev/null" 2>&1 | awk ' /Sec/ { print $2 }')
 else
     DECODE_TIME=0
 fi
 
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.log" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.ivf" &&
-rm -f "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.json" 
+SIZE=$(du -k "${OUTPUT}/${TYPE}/${TYPE}.ivf" | awk '{print $1}')
+BITRATE=$(ffprobe -i "${OUTPUT}/${TYPE}/${TYPE}.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
 
-SIZE=$(du -k "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" | awk '{print $1}') &&
-BITRATE=$(ffprobe -i "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.mkv" 2>&1 | awk ' /bitrate:/ { print $(NF-1) }')
-echo -n "svt-av1,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "$OUTPUT/${FOLDER}_$TYPE/${FOLDER}_$TYPE.stats"
+rm -f "${OUTPUT}/${TYPE}/${TYPE}.log" &&
+rm -f "${OUTPUT}/${TYPE}/${TYPE}.ivf" &&
+rm -f "${OUTPUT}/${TYPE}/${TYPE}.json" 
+
+echo -n "svt-av1,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "${OUTPUT}/${TYPE}/${TYPE}.stats"
