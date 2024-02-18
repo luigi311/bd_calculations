@@ -31,12 +31,12 @@ die() {
 
 help() {
     help="$(cat <<EOF
-Test multiple encoding flags simultaneously, will gather stats such as file size, duration of first pass and second pass,
-    visual metric scores and put them in a csv. Optionally can calulate bd_rate with that csv for all flags
+Test multiple encodes simultaneously, will gather stats such as file size, duration of first pass and second pass,
+    visual metric scores and put them in a csv. Optionally can calulate bd_rate with that csv
 Usage:
     ./run.sh [options]
 Example:
-    ./run.sh --flags arguments.aomenc --encworkers 12
+    ./run.sh --encworkers 12
 General Options:
     -h/--help                       Print this help screen
     -i/--input          [file]      Video source to use                                             (default video.mkv)
@@ -238,6 +238,7 @@ if [ "${THREADS}" -eq -1 ]; then
     # Cap threads to nproc
     if [ "${THREADS}" -gt "$(nproc)" ]; then
         THREADS="$(nproc)"
+    fi
 fi
 
 if [ "${N_THREADS}" -eq -1 ]; then
@@ -325,7 +326,7 @@ OUTPUTFINAL="${OUTPUT}/${ENCODER}/${HASH}/${VIDEO}"
 mkdir -p "${OUTPUTFINAL}"
 
 echo "Encoding"
-parallel -j "${ENC_WORKERS}" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "${PRESET_FILE}" -a "${BD_FILE}" "scripts/${ENCODER}.sh" --input \""${INPUT}"\" --output \""${OUTPUTFINAL}/{1}"\" --threads "${THREADS}" "${ENCODING}" --quality "{2}" --preset "{1}" --flag "baseline" --commit "${HASH}" $PASS $DECODE
+parallel -j "${ENC_WORKERS}" $DISTRIBUTE --joblog "${OUTPUTFINAL}/encoding.log" $RESUME --bar -a "${PRESET_FILE}" -a "${BD_FILE}" "scripts/${ENCODER}.sh" --input \""${INPUT}"\" --output \""${OUTPUTFINAL}/{1}"\" --threads "${THREADS}" "${ENCODING}" --quality "{2}" --preset "{1}" --commit "${HASH}" $PASS $DECODE
 
 
 echo "Calculating Metrics"
