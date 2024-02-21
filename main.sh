@@ -58,7 +58,7 @@ update_container_image() {
         echo "vvencapp: $DOCKER_VVENCAP -> $COMMIT_VVENCAP"
 
         ${CONTAINER_SYSTEM} image prune -a -f
-        ${CONTAINER_SYSTEM} build -t "bd_calculations" "${SCRIPT_DIR}"
+        ${CONTAINER_SYSTEM} build -t "bd_calculations" "${SCRIPT_DIR}" --no-cache
     fi
 }
 
