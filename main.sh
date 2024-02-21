@@ -120,7 +120,7 @@ done
 mkdir -p "${OUTPUT}/bd_calculations"
 RESULT_CSV="${OUTPUT}/bd_calculations/results.csv"
 
-echo "Encoder, Commit, Preset, Video, Size, Quality, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF" > "${RESULT_CSV}"
+echo "Encoder, Commit, Preset, Video, Size, Quality, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF, SSIMULACRA2" > "${RESULT_CSV}"
 
 for ENCODER in "${ENCODERS[@]}"; do
     LASTHASH=$(find "${OUTPUT}/${ENCODER}" -mindepth 1 -maxdepth 1 -type d -printf "%T@ %f\n" | sort -nr | awk 'NR==1{ print $2 }')

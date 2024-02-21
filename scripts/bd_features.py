@@ -242,6 +242,7 @@ def main():
                 target_preset = preset_dataset[0][numbers["preset"]]
 
                 vmaf = calculate_metrics(baseline_list, preset_dataset, numbers["vmaf"])
+                ssimcra2 = calculate_metrics(baseline_list, preset_dataset, numbers["ssimcra2"])
 
                 # Calculate time percentage difference
                 if encode_baseline_time != 0:
@@ -292,6 +293,7 @@ def main():
                         encode_time_diff,
                         decode_time_diff,
                         vmaf,
+                        ssimcra2,
                     )
                 )
 
@@ -310,6 +312,7 @@ def main():
                 "Encode Time Diff Pct",
                 "Decode Time Diff Pct",
                 "VMAF",
+                "SSIMCRA2",
             ]
         )
         for x in ls:

@@ -129,6 +129,7 @@ def calculations(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp)
                 , encode_time_pct
                 , decode_time_pct
                 , vmaf
+                , ssimulacra2
             ) VALUES (
                 '{timestamp}'
                 , {encoders_lookup[row[cal_base_encoder]]}
@@ -141,6 +142,7 @@ def calculations(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp)
                 , '{row[cal_encode_time]}'
                 , '{row[cal_decode_time]}'
                 , '{row[cal_vmaf]}'
+                , '{row[cal_ssim2]}'
             )"""
         )
     
@@ -179,6 +181,7 @@ def results(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp):
                 , second_encode_time
                 , decode_time
                 , vmaf
+                , ssimulacra2
             ) VALUES (
                 '{timestamp}'
                 , {encoders_lookup[row[res_encoder]]}
@@ -192,6 +195,7 @@ def results(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp):
                 , '{row[res_2_encode_time]}'
                 , '{row[res_decode_time]}'
                 , '{row[res_vmaf]}'
+                , '{row[res_ssim2]}'
             )"""
         )
     

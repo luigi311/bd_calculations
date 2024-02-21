@@ -88,20 +88,19 @@ else
 fi
 
 
-## SSIMULACRA2
-#SSIM2_OUT=""
-#OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
-#
-#SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
-#
-#if [ -n "$SSIM2" ]; then
-#    SSIM2_OUT="$SSIM2"
-#else
-#    die "Failed to generate SSIM2 info ${OUTPUT}"
-#fi
+# SSIMULACRA2
+SSIM2_OUT=""
+OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
 
-#printf ",%s,%s" "$VMAF_OUT" "$SSIM2_OUT" >> "$FILE.stats"
-printf ",%s" "$VMAF_OUT" >> "$FILE.stats"
+SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
+
+if [ -n "$SSIM2" ]; then
+    SSIM2_OUT="$SSIM2"
+else
+    die "Failed to generate SSIM2 info ${OUTPUT}"
+fi
+
+printf ",%s,%s" "$VMAF_OUT" "$SSIM2_OUT" >> "$FILE.stats"
 
 # Delete video file to save space
 #rm "$DISTORTED"
