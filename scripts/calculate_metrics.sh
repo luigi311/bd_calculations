@@ -90,9 +90,9 @@ fi
 
 # SSIMULACRA2
 SSIM2_OUT=""
-OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED")
+OUTPUT=$(ssimulacra2_rs video -f "${N_THREADS}" "$REFERENCE" "$DISTORTED" 2>&1)
 
-SSIM2=$(echo "$OUTPUT" | awk 'NR==2{ print $2 } ')
+SSIM2=$(echo "$OUTPUT" | awk '/Mean: /{print $2}')
 
 if [ -n "$SSIM2" ]; then
     SSIM2_OUT="$SSIM2"
