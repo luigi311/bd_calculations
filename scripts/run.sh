@@ -243,7 +243,7 @@ fi
 
 if [ "${N_THREADS}" -eq -1 ]; then
     # Set to 8 or nproc
-    N_THREADS=$(( 8 < $(nproc) ? 8 : $(nproc) ))    
+    N_THREADS=$(( 8 < $(nproc) ? 8 : $(nproc) ))
 fi
 
 # Set job amounts for encoding
@@ -343,4 +343,3 @@ do
     PRESET=$(basename "${FOLDER}")
     calculate_bd "${PRESET}"
 done
-

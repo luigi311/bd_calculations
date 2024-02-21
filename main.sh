@@ -2,6 +2,12 @@
 
 set -e
 
+# Source: http://mywiki.wooledge.org/BashFAQ/035
+die() {
+    printf '%s\n' "$1" >&2
+    exit 1
+}
+
 # Source: https://stackoverflow.com/questions/59895/how-do-i-get-the-directory-where-a-bash-script-is-located-from-within-the-script
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
@@ -62,6 +68,8 @@ update_container_image() {
     fi
 }
 
+N_THREADS=-1
+METRIC_WORKERS=1
 
 # Source: http://mywiki.wooledge.org/BashFAQ/035
 while :; do
@@ -86,6 +94,22 @@ while :; do
                 die "ERROR: $1 requires a non-empty option argument."
             fi
             ;;
+        --nthreads)
+            if [ "$2" ]; then
+                N_THREADS="$2"
+                shift
+            else
+                die "ERROR: $1 requires a non-empty option argument."
+            fi
+            ;;
+        --metricworkers)
+            if [ "$2" ]; then
+                METRIC_WORKERS="$2"
+                shift
+            else
+                die "ERROR: $1 requires a non-empty option argument."
+            fi
+            ;;
         --) # End of all options.
             shift
             break
@@ -99,6 +123,9 @@ while :; do
     shift
 done
 
+if [ "$N_THREADS" -eq -1 ]; then
+    N_THREADS=$(( 8 < $(nproc) ? 8 : $(nproc) ))
+fi
 
 # Check for new encoder commits and update container image if necessary
 update_container_image
@@ -112,7 +139,7 @@ for ENCODER in "${ENCODERS[@]}"; do
     for VIDEO in "${VIDEOS[@]}"; do
         printf "Running %s\n" "$ENCODER"
         printf "%s\n" "$VIDEO"
-        ${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/videos:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality_${ENCODER}" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --decode --crf --pass 1 --resume
+        ${CONTAINER_SYSTEM} run --rm -it -v "${OUTPUT}:/videos:z" -v "${SCRIPT_DIR}:/app:z" bd_calculations scripts/run.sh -i "/videos/${VIDEO}" --enc "$ENCODER" --output /videos --bd "steps/quality_${ENCODER}" --preset "steps/preset_${ENCODER}" -e "${ENC_WORKERS}" --threads "${THREADS}" --metricworkers "$METRIC_WORKERS" --nthreads "$N_THREADS" --decode --crf --pass 1 --resume
     done
 done
 
