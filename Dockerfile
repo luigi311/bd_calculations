@@ -1,4 +1,4 @@
-FROM docker.io/library/archlinux:base-devel AS base
+FROM shssoichiro/av1an-ci:latest AS base
 
 ENV LDFLAGS="-Wl,--no-as-needed"
 
@@ -9,10 +9,10 @@ ENV CXXFLAGS="-march=native -O3"
 # Build native for rust
 ENV RUSTFLAGS="-Ctarget-cpu=native"
 
-ENV BUILD_USER=makepkg
+ENV BUILD_USER=user
 
 RUN sed -i 's/#MAKEFLAGS="-j2"/MAKEFLAGS="-j$(nproc)"/' /etc/makepkg.conf
-RUN pacman-key --init && pacman -Sy --noconfirm archlinux-keyring && \
+RUN pacman-key --init && pacman -Syu --noconfirm archlinux-keyring && \
     pacman -Syu --noconfirm \
         wget \
         dos2unix \
@@ -26,28 +26,20 @@ RUN pacman-key --init && pacman -Sy --noconfirm archlinux-keyring && \
         bc && \
     yes | pacman -Scc
 
-RUN useradd --system --create-home $BUILD_USER \
-  && echo "$BUILD_USER ALL=(ALL:ALL) NOPASSWD:/usr/sbin/pacman" > /etc/sudoers.d/$BUILD_USER
-
 USER $BUILD_USER
-WORKDIR /home/$BUILD_USER
 
-# Install yay
-RUN git clone https://aur.archlinux.org/yay.git \
-  && cd yay \
-  && makepkg -sri --needed --noconfirm \
-  && cd \
-  && rm -rf .cache yay
+# Install ffmpeg-git seperate in case of failure
+RUN yes | yay -Sy --batchinstall ffmpeg-git && \
+    yes | yay -Scc
 
 # aom-git needs to be installed separately to resolve issues where aom-git 
 # is installing the base encoders instead of the git verison.
 # aom-git also installs aom which causes a package conflict requiring it to be ran twice.
 # Generate hash commits prior to clearing out the cache from yay
 RUN yay -Sy --batchinstall --noconfirm x264-git x265-git rav1e-git svt-av1-git && \
-    yay -Sy --batchinstall --noconfirm aom-git || yes | yay -Sy --batchinstall aom-git && \
-    yay -Sy --batchinstall --noconfirm ffmpeg-git && \
-    yay -Sy --batchinstall --noconfirm ssimulacra2_bin-git && \
-    yay -Sy --batchinstall --noconfirm vvenc-git vvc-vtm  && \
+    yay -S --batchinstall --noconfirm aom-git || yes | yay -Sy --batchinstall aom-git && \
+    yay -S --batchinstall --noconfirm ssimulacra2_bin-git && \
+    yay -S --batchinstall --noconfirm vvenc-git vvc-vtm  && \
     cd ~/.cache/yay/x264-git/x264 && git log --pretty=tformat:'%H' -n1 . > ~/x264 && \
     cd ~/.cache/yay/x265-git/x265_git && git log --pretty=tformat:'%H' -n1 . > ~/x265 && \
     cd ~/.cache/yay/rav1e-git/rav1e && git log --pretty=tformat:'%H' -n1 . > ~/rav1e && \
@@ -66,13 +58,6 @@ RUN mv "/home/${BUILD_USER}/x264" \
     "/home/${BUILD_USER}/aomenc" \
     "/home/${BUILD_USER}/vvencapp" \
     /
-
-RUN pacman -Sy  --noconfirm \
-        vapoursynth \
-        ffms2  \
-        mkvtoolnix-cli \
-        vapoursynth-plugin-lsmashsource && \
-    yes | pacman -Scc
 
 # Test aomenc
 RUN aomenc --help
