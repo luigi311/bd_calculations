@@ -131,8 +131,8 @@ fi
 update_container_image
 
 ENCODERS=("x264" "aomenc" "rav1e" "svt-av1" "x265" "vvencapp")
-VIDEOS=("Big Buck Bunny 720p.mkv" "Big Buck Bunny 1080p.mkv" "Tears of Steel 720p.mkv" "Tears of Steel 1080p.mkv" "Fallout 1080p.mkv" "Fallout 720p.mkv")
-THREADS=$(nproc --all)
+VIDEOS=("Big Buck Bunny 1080p.mkv" "Tears of Steel 1080p.mkv" "Fallout 1080p.mkv")
+THREADS=$(nproc)
 ENC_WORKERS=1
 
 for ENCODER in "${ENCODERS[@]}"; do
