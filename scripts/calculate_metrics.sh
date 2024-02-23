@@ -104,5 +104,7 @@ printf ",%s,%s" "$VMAF_OUT" "$SSIM2_OUT" >> "$FILE.stats"
 
 # Remove lwi file that ssimulacra2 creates
 rm -f "${DISTORTED}.lwi"
+rm -f "${REFERENCE}.lwi"
+
 # Delete video file to save space
 #rm "$DISTORTED"
