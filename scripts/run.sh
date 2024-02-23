@@ -6,7 +6,7 @@ calculate_bd() {
     FOUND=0
 
     TEMP_CSV="${OUTPUTFINAL}/${1}/${CSV}"
-    echo "Encoder, Commit, Preset, Video, Size, Quality, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF, SSIMULACRA2" > "${TEMP_CSV}"
+    echo "Encoder, Commit, Preset, Video, Size, Quality, Bitrate, First Encode Time, Second Encode Time, Decode Time, VMAF Mean, SSIMULACRA2 Mean, VMAF 5th, SSIMULACRA2 5th" > "${TEMP_CSV}"
 
     if [ -n "$LASTHASH" ]; then
         find "${OUTPUT}/${ENCODER}/${LASTHASH}/${VIDEO}/${1}" -name '*.stats' -exec awk '{print $0}' {} + >> "${TEMP_CSV}" && FOUND=1

@@ -149,6 +149,8 @@ numbers = {
     "decode_time": 9,
     "vmaf": 10,
     "ssimcra2": 11,
+    "vmaf_5th": 12,
+    "ssimcra2_5th": 13,
 }
 
 
@@ -241,8 +243,10 @@ def main():
                 target_commit = preset_dataset[0][numbers["commit"]]
                 target_preset = preset_dataset[0][numbers["preset"]]
 
-                vmaf = calculate_metrics(baseline_list, preset_dataset, numbers["vmaf"])
-                ssimcra2 = calculate_metrics(baseline_list, preset_dataset, numbers["ssimcra2"])
+                vmaf_mean = calculate_metrics(baseline_list, preset_dataset, numbers["vmaf_mean"])
+                ssimcra2_mean = calculate_metrics(baseline_list, preset_dataset, numbers["ssimcra2_mean"])
+                vmaf_5th = calculate_metrics(baseline_list, preset_dataset, numbers["vmaf_5th"])
+                ssimcra2_5th = calculate_metrics(baseline_list, preset_dataset, numbers["ssimcra2_5th"])
 
                 # Calculate time percentage difference
                 if encode_baseline_time != 0:
@@ -292,8 +296,10 @@ def main():
                         video,
                         encode_time_diff,
                         decode_time_diff,
-                        vmaf,
-                        ssimcra2,
+                        vmaf_mean,
+                        ssimcra2_mean,
+                        vmaf_5th,
+                        ssimcra2_5th,
                     )
                 )
 
@@ -311,8 +317,10 @@ def main():
                 "Video",
                 "Encode Time Diff Pct",
                 "Decode Time Diff Pct",
-                "VMAF",
-                "SSIMCRA2",
+                "VMAF Mean",
+                "SSIMCRA2 Mean",
+                "VMAF 5th",
+                "SSIMCRA2 5th",
             ]
         )
         for x in ls:

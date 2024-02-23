@@ -17,8 +17,10 @@ res_bitrate = 6
 res_1_encode_time = 7
 res_2_encode_time = 8
 res_decode_time = 9
-res_vmaf = 10
-res_ssim2 = 11
+res_vmaf_mean = 10
+res_ssim2_mean = 11
+res_vmaf_5th = 12
+res_ssim2_5th = 13
 
 # CSV calculations columns
 cal_base_encoder = 0
@@ -30,8 +32,10 @@ cal_tar_preset = 5
 cal_video = 6
 cal_encode_time = 7
 cal_decode_time = 8
-cal_vmaf = 9
-cal_ssim2 = 10
+cal_vmaf_mean = 9
+cal_ssim2_mean = 10
+cal_vmaf_5th = 11
+cal_ssim2_5th = 12
 
 
 def get_values_from_table(cur, table):
@@ -130,6 +134,8 @@ def calculations(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp)
                 , decode_time_pct
                 , vmaf
                 , ssimulacra2
+                , vmaf_5th
+                , ssimulacra2_5th
             ) VALUES (
                 '{timestamp}'
                 , {encoders_lookup[row[cal_base_encoder]]}
@@ -141,8 +147,10 @@ def calculations(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp)
                 , {videos_lookup[row[cal_video]]}
                 , '{row[cal_encode_time]}'
                 , '{row[cal_decode_time]}'
-                , '{row[cal_vmaf]}'
-                , '{row[cal_ssim2]}'
+                , '{row[cal_vmaf_mean]}'
+                , '{row[cal_ssim2_mean]}'
+                , '{row[cal_vmaf_5th]}'
+                , '{row[cal_ssim2_5th]}'
             )"""
         )
     
@@ -182,6 +190,8 @@ def results(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp):
                 , decode_time
                 , vmaf
                 , ssimulacra2
+                , vmaf_5th
+                , ssimulacra2_5th
             ) VALUES (
                 '{timestamp}'
                 , {encoders_lookup[row[res_encoder]]}
@@ -194,8 +204,10 @@ def results(cur, conn, csv_data, encoders_lookup, videos_lookup, timestamp):
                 , '{row[res_1_encode_time]}'
                 , '{row[res_2_encode_time]}'
                 , '{row[res_decode_time]}'
-                , '{row[res_vmaf]}'
-                , '{row[res_ssim2]}'
+                , '{row[res_vmaf_mean]}'
+                , '{row[res_ssim2_mean]}'
+                , '{row[res_vmaf_5th]}'
+                , '{row[res_ssim2_5th]}'
             )"""
         )
     
