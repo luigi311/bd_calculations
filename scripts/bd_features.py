@@ -147,8 +147,8 @@ numbers = {
     "first_time": 7,
     "second_time": 8,
     "decode_time": 9,
-    "vmaf": 10,
-    "ssimcra2": 11,
+    "vmaf_mean": 10,
+    "ssimcra2_mean": 11,
     "vmaf_5th": 12,
     "ssimcra2_5th": 13,
 }
