@@ -115,5 +115,12 @@ printf ",%s,%s,%s,%s" "$VMAF_OUT_MEAN" "$SSIM2_OUT_MEAN" "$VMAF_OUT_5_PERCENTILE
 rm -f "${DISTORTED}.lwi"
 rm -f "${REFERENCE}.lwi"
 
+# Delete y4m DISTORTED file due to massive size and h266 being kept
+# If extension is y4m, delete it
+if [ "${DISTORTED##*.}" = "y4m" ]; then
+    rm -f "${DISTORTED}"
+fi
+
+
 # Delete video file to save space
 #rm "$DISTORTED"
