@@ -181,7 +181,6 @@ BITRATE=$(awk '/stats summary: frame=/ {print $(NF-1)}' "${OUTPUT}/${TYPE}/${TYP
 
 rm -f "${OUTPUT}/${TYPE}/${TYPE}.log" &&
 rm -f "${OUTPUT}/${TYPE}/${TYPE}.yuv" &&
-rm -f "${OUTPUT}/${TYPE}/${TYPE}.h266" &&
 rm -f "${OUTPUT}/${TYPE}/${TYPE}.info"
 
 echo -n "vvencapp,${COMMIT},${PRESET},${INPUT_NAME},${SIZE},${TYPE},${BITRATE},${FIRST_TIME},${SECOND_TIME},${DECODE_TIME}" > "${OUTPUT}/${TYPE}/${TYPE}.stats"
